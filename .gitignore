@@ -1,0 +1,18 @@
+# root
+node_modules
+dist
+.env
+.env.*
+*.log
+.DS_Store
+
+# web
+web/node_modules
+web/dist
+
+# api
+api/node_modules
+api/dist
+
+# prisma
+api/prisma/dev.db
