@@ -1,40 +1,115 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { fetchJSON } from '../services/api'
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { fetchJSON } from '../services/api';
+import '../styles/EventList.css';
 
-export default function List() {
-  const [items, setItems] = useState<any[]>([])
-  const [total, setTotal] = useState(0)
-  const [search, setSearch] = useState('')
+type Licitacion = {
+  id: number;
+  titulo: string;
+  fechaCierre: string;
+  estado: string;
+  descripcion: string;
+};
 
-  async function load() {
-    const q = search ? `?search=${encodeURIComponent(search)}` : ''
-    const data = await fetchJSON(`/api/licitaciones${q}`)
-    setItems(data.items); setTotal(data.total)
-  }
-  useEffect(() => { load() }, [])
+const formatearFechaCierre = (fechaString: string) => {
+  const opciones: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+  return new Date(fechaString).toLocaleDateString('es-ES', opciones);
+};
+
+export default function ListaLicitaciones() {
+  const [licitaciones, setLicitaciones] = useState<Licitacion[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [pestañaActiva, setPestañaActiva] = useState('Próximas');
+  const pageSize = 10;
+
+  const cargarLicitaciones = async () => {
+    const q = `?page=${pagina}&pageSize=${pageSize}`;
+    const data = await fetchJSON(`/api/licitaciones${q}`);
+    setLicitaciones(data.items);
+    setTotal(data.total);
+  };
+
+  const eliminarLicitacion = async (id: number) => {
+    if (!confirm('¿Seguro que quieres eliminar esta licitación?')) return;
+    await fetchJSON(`/api/licitaciones/${id}`, { method: 'DELETE' });
+    cargarLicitaciones();
+  };
+
+  useEffect(() => {
+    cargarLicitaciones();
+  }, [pagina]);
+
+  const totalPaginas = Math.ceil(total / pageSize);
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <input placeholder="Buscar por título" value={search} onChange={e=>setSearch(e.target.value)} />
-        <button onClick={load} data-testid="search-btn">Buscar</button>
-      </div>
-      {items.length === 0 ? <p>No hay licitaciones</p> : (
-        <table width="100%">
-          <thead><tr><th>Título</th><th>Estado</th><th>Cierre</th></tr></thead>
-          <tbody>
-            {items.map(it => (
-              <tr key={it.id} data-testid={`lic-row-${it.id}`}>
-                <td><Link to={`/licitaciones/${it.id}`}>{it.titulo}</Link></td>
-                <td>{it.estado}</td>
-                <td>{new Date(it.fechaCierre).toLocaleDateString()}</td>
-              </tr>
+    <div className="licitaciones-container">
+      <header className="licitaciones-header">
+        <h1>Panel de Licitaciones</h1>
+        <nav className="tabs">
+          {['Todas','Próximas','Cerradas'].map(tab => (
+            <button 
+              key={tab}
+              className={pestañaActiva === tab ? 'active' : ''} 
+              onClick={() => setPestañaActiva(tab)}>
+              {tab}
+            </button>
+          ))}
+        </nav>
+      </header>
+
+      {licitaciones.length === 0 ? (
+        <p>No hay licitaciones disponibles.</p>
+      ) : (
+        <>
+          <div className="licitaciones-grid">
+            {licitaciones.map((licitacion) => (
+              <div key={licitacion.id} className="licitacion-card">
+                <div className="licitacion-info">
+                  <p className="licitacion-estado">{licitacion.estado}</p>
+                  <Link to={`/licitaciones/${licitacion.id}`} className="licitacion-titulo">
+                    {licitacion.titulo}
+                  </Link>
+                  <p className="licitacion-fecha">
+                    <strong>Fecha de cierre:</strong> {formatearFechaCierre(licitacion.fechaCierre)}
+                  </p>
+                </div>
+
+                <hr className="divider" />
+
+                <div className="card-footer">
+                  <div className="institucion-info">
+                    <span>🏛️</span>
+                    <p>{licitacion.descripcion || "no especificada"}</p>
+                  </div>
+                  <div className="card-actions">
+                    <button 
+                      onClick={() => eliminarLicitacion(licitacion.id)} 
+                      className="delete-btn" 
+                      title="Eliminar Licitación">
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+
+          <div className="pagination">
+            <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}>
+              ◀ Anterior
+            </button>
+            <span>Página {pagina} de {totalPaginas}</span>
+            <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}>
+              Siguiente ▶
+            </button>
+          </div>
+        </>
       )}
-      <p>Total: {total}</p>
+
+      <Link to="/licitaciones/nueva" className="fab" title="Crear nueva licitación">
+        +
+      </Link>
     </div>
-  )
+  );
 }
