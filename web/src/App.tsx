@@ -1,16 +1,22 @@
-import { Link, Outlet } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom';
+import './styles/app.css'; 
 
 export default function App() {
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>LicitAgil</h1>
-        <nav style={{ display: 'flex', gap: 8 }}>
-          <Link to="/">Listado</Link>
-          <Link to="/licitaciones/nueva">Nueva</Link>
+    <div className="app-container">
+      <header className="app-header">
+        <h1 className="logo">LicitAgil</h1>
+        <nav className="app-nav">
+         
+          <NavLink to="/">Listado</NavLink>
+          <NavLink to="/licitaciones/nueva">Nueva Licitación</NavLink>
         </nav>
       </header>
-      <Outlet />
+      
+      <main>
+       
+        <Outlet />
+      </main>
     </div>
-  )
+  );
 }
