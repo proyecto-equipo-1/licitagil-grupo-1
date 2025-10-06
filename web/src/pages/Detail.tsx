@@ -12,6 +12,7 @@ type Licitacion = {
   fechaCierre: string;
   descripcion: string;
   pdfPath?: string | null;
+  pdfOriginalName?: string | null;
 };
 
 const formatearFechaCompleta = (fechaString: string) => {
@@ -46,7 +47,7 @@ export default function Detail() {
         <div className="detalle-pdf-viewer">
           {!pdfError ? (
             <iframe
-              src={lic.pdfPath}
+              src={`/api/licitaciones/${id}/pdf`}
               title="PDF de la licitación"
               onError={handlePdfError}
               style={{ border: 'none' }}
@@ -68,7 +69,8 @@ export default function Detail() {
             </div>
           )}
           <div style={{ marginTop: 16, textAlign: 'center' }}>
-            <a href={lic.pdfPath} target="_blank" rel="noopener noreferrer" className="btn btn-pdf" download>
+          {lic.pdfOriginalName && <div style={{ marginBottom: 6, fontSize: 14 }}>{lic.pdfOriginalName}</div>}
+            <a href={`/api/licitaciones/${id}/pdf?download=1`} target="_blank" rel="noopener noreferrer" className="btn btn-pdf">
               📄 Descargar PDF
             </a>
           </div>

@@ -45,26 +45,98 @@ npm run cypress:open    # o npm run cypress:run
 - **API**: ver `api/.env.example`
 - **Web**: ver `web/.env.example`
 
-## Scripts útiles
-- API: `dev`, `build`, `start`, `migrate`, `seed`
-- Web: `dev`, `build`, `preview`, `cypress:open`, `cypress:run`
+### Actualizar un entorno existente (si ya se había ejecutado antes)
 
-## Problemas Comunes (Troubleshooting)
+Si ya había un entorno iniciado y quieres traer los últimos cambios (migraciones, nuevas dependencias, cambios en uploads, etc.), sigue estos pasos. Los ejemplos usan PowerShell en Windows; adapta a bash si estás en Linux/macOS.
 
-### API
-- **Error "Unknown command: prisma"**: Usar `npm run migrate` en lugar de `npm prisma migrate dev`
-- **Error "Cannot find package 'dotenv'"**: Ejecutar `npm install dotenv`
-- **Comandos correctos**:
-  - ✅ `npm run migrate` (en lugar de `npm prisma migrate dev`)
-  - ✅ `npm run seed` (en lugar de `npm prisma db seed`)
+1) Traer cambios del repositorio
 
-### Web/Frontend
-- **Error "Cannot find package '@vitejs/plugin-react'"**: Ejecutar `npm install @vitejs/plugin-react --save-dev`
-- **PowerShell**: Usar `;` en lugar de `&&` para concatenar comandos
+```powershell
+cd C:\ruta\a\tu\repo\licitagil-grupo-1
+git pull origin develop
+```
 
-### Verificación de servicios funcionando
-- API: `http://localhost:3000/healthz` debería responder `{"ok": true}`
-- Web: `http://localhost:5173/` debería mostrar la aplicación React
+2) Revisar y actualizar variables de entorno
 
-## CI
-Workflow mínimo (`.github/workflows/ci.yml`) corre migraciones, seed, levanta API + web estático y ejecuta Cypress en modo headless.
+```powershell
+cd api
+if (-not (Test-Path .env)) { copy .env.example .env }
+# editar api/.env si es necesario
+cd ..\web
+if (-not (Test-Path .env)) { copy .env.example .env }
+# editar web/.env si es necesario
+```
+
+3) Levantar o asegurar la base de datos (Docker)
+
+```powershell
+# desde la raíz del repo
+docker compose up -d db
+# comprobar salud del contenedordocker ps --filter name=licitagil_db
+```
+
+4) Actualizar dependencias y ejecutar migraciones en la API
+
+```powershell
+cd api
+npm install
+# Si se hicieron cambios en prisma/schema.prisma:
+npx prisma migrate dev --name add-pdf-originalname
+npx prisma generate
+```
+
+Notas:
+- `migrate dev` crea y aplica migraciones (útil en desarrollo). Si trabajas con un equipo y ya existe una migración aplicada en la rama remota, usa `npx prisma migrate deploy` para aplicar las migraciones pendientes sin crear nuevas.
+- Haz copia de seguridad de la base de datos antes de migrar en producción.
+
+5) Asegurar carpeta de uploads
+
+```powershell
+cd api
+if (-not (Test-Path .\uploads)) { New-Item -ItemType Directory -Path .\uploads }
+```
+
+6) Reiniciar / levantar la API
+
+```powershell
+cd api
+npm run dev
+# o en producción
+npm run build
+npm start
+```
+
+7) Actualizar frontend (web)
+
+```powershell
+cd ..\web
+npm install
+npm run dev
+# o en producción
+npm run build
+```
+
+8) Verificar upload / visores
+
+- Abre el frontend y revisa una licitación con PDF para confirmar que el visor funciona y el nombre original se muestra correctamente.
+- Si el PDF no carga, comprueba que el archivo físico exista en `api/uploads/` y que el backend esté sirviendo `/uploads` o que el endpoint `/api/licitaciones/:id/pdf` funcione.
+
+9) Diagnóstico rápido
+
+- Ver logs del backend (desde `api`):
+
+```powershell
+# la terminal donde ejecutaste `npm run dev` muestra errores
+docker logs licitagil_db --tail 200
+```
+
+- Revisar la pestaña Network en DevTools para errores 404/500 y cabeceras Content-Disposition.
+
+10) Seguridad y recomendaciones
+
+- No expongas el puerto 5432 de Postgres públicamente sin protección. Usa túnel SSH o VPN para accesos remotos.
+- Restringe `pg_hba.conf` por IPs y usa usuarios con permisos mínimos.
+- Haz backup de la carpeta `api/uploads` antes de operaciones destructivas.
+
+Si quieres, puedo crear un script `update.ps1` con estos pasos automatizados. ¿Lo genero ahora?
+

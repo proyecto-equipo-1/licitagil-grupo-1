@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { fetchJSON } from '../services/api';
 import '../styles/formulario.css'; 
@@ -14,6 +14,10 @@ export default function EditPage() {
   const { id } = useParams();
   const nav = useNavigate();
   const [form, setForm] = useState<LicitacionForm | null>(null);
+  const [pdfPath, setPdfPath] = useState<string | null>(null);
+  const [pdfOriginalName, setPdfOriginalName] = useState<string | null>(null);
+  const [removePdf, setRemovePdf] = useState(false);
+  const pdfInputRef = useRef<HTMLInputElement>(null as any);
 
   useEffect(() => {
    
@@ -26,6 +30,8 @@ export default function EditPage() {
           // Formateamos la fecha para el input datetime-local
           fecha_cierre: new Date(lic.fechaCierre).toISOString().slice(0, 16)
         });
+        setPdfPath(lic.pdfPath || null);
+        setPdfOriginalName(lic.pdfOriginalName || null);
       });
     }
   }, [id]);
@@ -39,10 +45,24 @@ export default function EditPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    await fetchJSON(`/api/licitaciones/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(form)
-    });
+    // Enviar como FormData si hay archivo o se desea eliminar
+    if (!form) return;
+    const hasFile = pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0];
+    if (hasFile || removePdf) {
+      const fd = new FormData();
+      fd.append('titulo', form.titulo);
+      fd.append('descripcion', form.descripcion);
+      fd.append('estado', form.estado);
+      fd.append('fecha_cierre', form.fecha_cierre);
+      if (hasFile && pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0]) {
+        fd.append('pdf', pdfInputRef.current.files[0]);
+      }
+      if (removePdf) fd.append('removePdf', '1');
+      const res = await fetch(`/api/licitaciones/${id}`, { method: 'PUT', body: fd });
+      if (!res.ok) throw new Error(await res.text());
+    } else {
+      await fetchJSON(`/api/licitaciones/${id}`, { method: 'PUT', body: JSON.stringify(form) });
+    }
     nav(`/`);
   }
 
@@ -99,6 +119,27 @@ export default function EditPage() {
           onChange={handleInputChange} 
           required
         />
+      </div>
+
+      <div className="form-group">
+        <label>PDF actual</label>
+        {pdfPath ? (
+            <div>
+                <div style={{ marginBottom: 6 }}>
+                  <a href={`/api/licitaciones/${id}/pdf`} target="_blank" rel="noreferrer">{pdfOriginalName || pdfPath.split('/').pop()}</a>
+                </div>
+                <div>
+                  <label><input type="checkbox" checked={removePdf} onChange={e => setRemovePdf(e.target.checked)} /> Eliminar PDF</label>
+                </div>
+            </div>
+        ) : (
+          <div>No hay PDF</div>
+        )}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="pdf">Subir nuevo PDF (reemplaza al actual)</label>
+        <input type="file" id="pdf" name="pdf" accept="application/pdf" ref={pdfInputRef} />
       </div>
 
       <div className="form-actions">

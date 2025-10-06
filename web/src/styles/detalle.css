@@ -86,7 +86,7 @@
 .detalle-flex-container {
   display: flex;
   gap: 24px;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 20px auto;
   padding: 20px;
   min-height: 600px;
