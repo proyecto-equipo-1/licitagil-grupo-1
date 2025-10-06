@@ -27,12 +27,30 @@ export async function getOne(req, res) {
 }
 
 export async function create(req, res) {
-  const parsed = licitacionCreateSchema.safeParse(req.body);
+  // Si viene un archivo PDF, guardar la ruta
+  let pdfPath: string | undefined = undefined;
+  if (req.file) {
+    pdfPath = `/uploads/${req.file.filename}`;
+  }
+  // Si el frontend envía datos como form-data, los campos pueden venir como strings
+  const body = req.body;
+  // Convertir fecha_cierre a Date si es string
+  if (body.fecha_cierre && typeof body.fecha_cierre === 'string') {
+    body.fecha_cierre = new Date(body.fecha_cierre);
+  }
+  const parsed = licitacionCreateSchema.safeParse({
+    ...body,
+    fecha_cierre: body.fecha_cierre
+  });
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { titulo, descripcion, estado, fecha_cierre } = parsed.data;
   const lic = await prisma.licitacion.create({
     data: {
-      titulo, descripcion, estado, fechaCierre: new Date(fecha_cierre)
+      titulo,
+      descripcion,
+      estado,
+      fechaCierre: new Date(fecha_cierre),
+      pdfPath
     }
   });
   res.status(201).json(lic);

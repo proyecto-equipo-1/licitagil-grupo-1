@@ -12,6 +12,7 @@ model Licitacion {
   estado         Estado
   fechaCreacion  DateTime @default(now())
   fechaCierre    DateTime
+  pdfPath        String?   // Ruta del PDF subido
 }
 enum Estado {
   Abierta
