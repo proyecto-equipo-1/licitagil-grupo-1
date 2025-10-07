@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchJSON } from '../services/api';
 import '../styles/formulario.css'; 
@@ -25,13 +25,27 @@ export default function NewPage() {
     setForm(prevForm => ({ ...prevForm, [name]: value as any }));
   };
 
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const lic = await fetchJSON('/api/licitaciones', {
+    const formData = new FormData();
+    formData.append('titulo', form.titulo);
+    formData.append('descripcion', form.descripcion);
+    formData.append('estado', form.estado);
+    formData.append('fecha_cierre', form.fecha_cierre);
+    if (pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0]) {
+      formData.append('pdf', pdfInputRef.current.files[0]);
+    }
+    const res = await fetch('/api/licitaciones', {
       method: 'POST',
-      body: JSON.stringify(form)
+      body: formData
     });
-    // Navegamos a la página de detalle de la nueva licitación creada
+    if (!res.ok) {
+      alert('Error al crear la licitación');
+      return;
+    }
+    const lic = await res.json();
     nav(`/licitaciones/${lic.id}`);
   }
 
@@ -86,6 +100,18 @@ export default function NewPage() {
           name="fecha_cierre"
           value={form.fecha_cierre} 
           onChange={handleInputChange} 
+          required
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="pdf">PDF de la licitación (opcional)</label>
+        <input 
+          type="file"
+          id="pdf"
+          name="pdf"
+          accept="application/pdf"
+          ref={pdfInputRef}
           required
         />
       </div>

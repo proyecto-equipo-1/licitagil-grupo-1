@@ -81,3 +81,83 @@
   background-color: #f0f2f5;
   color: #595959;
 }
+
+/* Layout flex para visor PDF y panel de información */
+.detalle-flex-container {
+  display: flex;
+  gap: 24px;
+  max-width: 1800px;
+  margin: 20px auto;
+  padding: 20px;
+  min-height: 600px;
+}
+
+.detalle-pdf-viewer {
+  flex: 1;
+  min-width: 600px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+  border: 1px solid #e0e0e0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.detalle-pdf-viewer iframe {
+  flex: 1;
+  min-height: 600px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.detalle-pdf-vacio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-style: italic;
+  background-color: #f8f9fa;
+}
+
+.detalle-info-panel {
+  flex: 0 0 400px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+  border: 1px solid #e0e0e0;
+  padding: 32px;
+  height: fit-content;
+}
+
+.btn-pdf {
+  background-color: #dc3545;
+  color: white;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn-pdf:hover {
+  background-color: #c82333;
+  text-decoration: none;
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .detalle-flex-container {
+    flex-direction: column;
+  }
+  
+  .detalle-pdf-viewer {
+    min-width: auto;
+  }
+  
+  .detalle-info-panel {
+    flex: none;
+  }
+}
