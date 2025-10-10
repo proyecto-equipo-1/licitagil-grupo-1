@@ -174,15 +174,17 @@
 /* Estilos para el filtro de estado */
 .filter-container {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 180px;
 }
 
 .filter-container label {
   font-size: 14px;
   color: #555;
   font-weight: 500;
+  margin-bottom: 0;
 }
 
 .estado-select {
@@ -193,6 +195,8 @@
   background-color: white;
   cursor: pointer;
   transition: border-color 0.3s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .estado-select:focus {
@@ -203,4 +207,64 @@
 
 .estado-select:hover {
   border-color: #bbb;
+}
+
+/* Estilos para la fila de filtros */
+.filters-row {
+  display: flex;
+  gap: 30px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+/* Estilos para el contenedor de búsqueda */
+.search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 250px;
+}
+
+.search-container label {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  transition: border-color 0.3s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.search-input:hover {
+  border-color: #bbb;
+}
+
+/* Estilos para mensaje de no resultados */
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.no-results p {
+  font-size: 16px;
+  margin: 0;
 }
