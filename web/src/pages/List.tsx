@@ -30,11 +30,21 @@ export default function ListaLicitaciones() {
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
   const [pestañaActiva, setPestañaActiva] = useState('Todas');
+  const [busqueda, setBusqueda] = useState('');
   const pageSize = 10;
 
   const cargarLicitaciones = async () => {
-    const q = `?page=${pagina}&pageSize=${pageSize}&state=${pestañaActiva}`;
-    const data = await fetchJSON(`/api/licitaciones${q}`);
+    let queryParams = `?page=${pagina}&pageSize=${pageSize}`;
+    
+    if (pestañaActiva !== 'Todas') {
+      queryParams += `&state=${pestañaActiva}`;
+    }
+    
+    if (busqueda.trim()) {
+      queryParams += `&search=${busqueda.trim()}`;
+    }
+    
+    const data = await fetchJSON(`/api/licitaciones${queryParams}`);
     setLicitaciones(data.items);
     setTotal(data.total);
   };
@@ -47,7 +57,12 @@ export default function ListaLicitaciones() {
 
   useEffect(() => {
     cargarLicitaciones();
-  }, [pagina, pestañaActiva]); // ← Array de dependencias
+  }, [pagina, pestañaActiva, busqueda]);
+
+  // Resetear página cuando cambian los filtros
+  useEffect(() => {
+    setPagina(1);
+  }, [pestañaActiva, busqueda]); // ← Array de dependencias
 
   const totalPaginas = Math.ceil(total / pageSize);
 
@@ -55,24 +70,44 @@ export default function ListaLicitaciones() {
     <div className="licitaciones-container">
       <header className="licitaciones-header">
         <h1>Panel de Licitaciones</h1>
-        <div className="filter-container">
-          <label htmlFor="estado-filter">Filtrar por estado:</label>
-          <select 
-            id="estado-filter"
-            value={pestañaActiva} 
-            onChange={(e) => setPestañaActiva(e.target.value)}
-            className="estado-select"
-          >
-            <option value="Todas">Todas</option>
-            <option value="Abierta">Abierta</option>
-            <option value="En_revision">En revisión</option>
-            <option value="Cerrada">Cerrada</option>
-          </select>
+        <div className="filters-row">
+          <div className="search-container">
+            <label htmlFor="search-input">Buscar por título:</label>
+            <input
+              id="search-input"
+              type="text"
+              placeholder="Escriba para buscar..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          <div className="filter-container">
+            <label htmlFor="estado-filter">Filtrar por estado:</label>
+            <select 
+              id="estado-filter"
+              value={pestañaActiva} 
+              onChange={(e) => setPestañaActiva(e.target.value)}
+              className="estado-select"
+            >
+              <option value="Todas">Todas</option>
+              <option value="Abierta">Abierta</option>
+              <option value="En_revision">En revisión</option>
+              <option value="Cerrada">Cerrada</option>
+            </select>
+          </div>
         </div>
       </header>
 
       {licitaciones.length === 0 ? (
-        <p>No hay licitaciones disponibles.</p>
+        <div className="no-results">
+          <p>
+            {busqueda.trim() 
+              ? `No se encontraron licitaciones que contengan "${busqueda.trim()}"` 
+              : "No hay licitaciones disponibles."
+            }
+          </p>
+        </div>
       ) : (
         <>
           <div className="licitaciones-grid">
