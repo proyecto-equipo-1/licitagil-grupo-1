@@ -16,15 +16,24 @@ const formatearFechaCierre = (fechaString: string) => {
   return new Date(fechaString).toLocaleDateString('es-ES', opciones);
 };
 
+const formatearEstado = (estado: string) => {
+  const estadosFormateados: { [key: string]: string } = {
+    'Abierta': 'Abierta',
+    'En_revision': 'En revisión',
+    'Cerrada': 'Cerrada'
+  };
+  return estadosFormateados[estado] || estado;
+};
+
 export default function ListaLicitaciones() {
   const [licitaciones, setLicitaciones] = useState<Licitacion[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
-  const [pestañaActiva, setPestañaActiva] = useState('Próximas');
+  const [pestañaActiva, setPestañaActiva] = useState('Todas');
   const pageSize = 10;
 
   const cargarLicitaciones = async () => {
-    const q = `?page=${pagina}&pageSize=${pageSize}`;
+    const q = `?page=${pagina}&pageSize=${pageSize}&state=${pestañaActiva}`;
     const data = await fetchJSON(`/api/licitaciones${q}`);
     setLicitaciones(data.items);
     setTotal(data.total);
@@ -38,7 +47,7 @@ export default function ListaLicitaciones() {
 
   useEffect(() => {
     cargarLicitaciones();
-  }, [pagina]);
+  }, [pagina, pestañaActiva]); // ← Array de dependencias
 
   const totalPaginas = Math.ceil(total / pageSize);
 
@@ -46,16 +55,20 @@ export default function ListaLicitaciones() {
     <div className="licitaciones-container">
       <header className="licitaciones-header">
         <h1>Panel de Licitaciones</h1>
-        <nav className="tabs">
-          {['Todas','Próximas','Cerradas'].map(tab => (
-            <button 
-              key={tab}
-              className={pestañaActiva === tab ? 'active' : ''} 
-              onClick={() => setPestañaActiva(tab)}>
-              {tab}
-            </button>
-          ))}
-        </nav>
+        <div className="filter-container">
+          <label htmlFor="estado-filter">Filtrar por estado:</label>
+          <select 
+            id="estado-filter"
+            value={pestañaActiva} 
+            onChange={(e) => setPestañaActiva(e.target.value)}
+            className="estado-select"
+          >
+            <option value="Todas">Todas</option>
+            <option value="Abierta">Abierta</option>
+            <option value="En_revision">En revisión</option>
+            <option value="Cerrada">Cerrada</option>
+          </select>
+        </div>
       </header>
 
       {licitaciones.length === 0 ? (
@@ -66,7 +79,7 @@ export default function ListaLicitaciones() {
             {licitaciones.map((licitacion) => (
               <div key={licitacion.id} className="licitacion-card">
                 <div className="licitacion-info">
-                  <p className="licitacion-estado">{licitacion.estado}</p>
+                  <p className="licitacion-estado">{formatearEstado(licitacion.estado)}</p>
                   <Link to={`/licitaciones/${licitacion.id}`} className="licitacion-titulo">
                     {licitacion.titulo}
                   </Link>

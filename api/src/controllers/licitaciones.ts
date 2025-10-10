@@ -1,14 +1,25 @@
 import { prisma } from '../db/prisma.js';
 import { licitacionCreateSchema, licitacionUpdateSchema } from '../schemas/licitacion.js';
+import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 
-export async function list(req, res) {
+export async function list(req: Request, res: Response) {
   const page = Number(req.query.page) || 1;
   const pageSize = Number(req.query.pageSize) || 10;
+  const state = String(req.query.state || 'Todas').trim();
   const search = String(req.query.search || '').trim();
 
-  const where = search ? { titulo: { contains: search, mode: 'insensitive' } } : {};
+  let where: any = {};
+
+  if (search) {
+    where.titulo = { contains: search, mode: 'insensitive' };
+  }
+
+  if (state !== 'Todas') {
+    where.estado = state;
+  }
+
   const [items, total] = await Promise.all([
     prisma.licitacion.findMany({
       where,
@@ -21,14 +32,14 @@ export async function list(req, res) {
   res.json({ items, total });
 }
 
-export async function getOne(req, res) {
+export async function getOne(req: Request, res: Response) {
   const id = Number(req.params.id);
   const lic = await prisma.licitacion.findUnique({ where: { id } });
   if (!lic) return res.status(404).json({ error: 'No encontrada' });
   res.json(lic);
 }
 
-export async function getPdf(req, res) {
+export async function getPdf(req: Request, res: Response) {
   const id = Number(req.params.id);
   const lic = await prisma.licitacion.findUnique({ where: { id } });
   if (!lic) return res.status(404).json({ error: 'No encontrada' });
@@ -56,7 +67,7 @@ export async function getPdf(req, res) {
   stream.pipe(res);
 }
 
-export async function create(req, res) {
+export async function create(req: Request, res: Response) {
   // Si viene un archivo PDF, guardar la ruta
   let pdfPath: string | undefined = undefined;
   if (req.file) {
@@ -87,7 +98,7 @@ export async function create(req, res) {
   res.status(201).json(lic);
 }
 
-export async function update(req, res) {
+export async function update(req: Request, res: Response) {
   const id = Number(req.params.id);
   // Si viene multipart/form-data (con archivo), los datos están en req.body y el archivo en req.file
   const body = req.body || {};
@@ -133,7 +144,7 @@ export async function update(req, res) {
   }
 }
 
-export async function remove(req, res) {
+export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
   try {
     await prisma.licitacion.delete({ where: { id } });
