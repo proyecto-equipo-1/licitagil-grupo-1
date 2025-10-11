@@ -32,11 +32,17 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
   it('🏗️ PASO 1: Crear nueva licitación', () => {
     cy.log('🚀 INICIANDO PASO 1: Crear nueva licitación...')
     
+    // Screenshot del estado inicial
+    cy.screenshot('01-inicio-crear-licitacion')
+    
     // Navegar al formulario de creación
     cy.get('a[href="/licitaciones/nueva"]').first().click()
     cy.url().should('include', '/licitaciones/nueva')
     cy.wait(2000) // Pausa para ver el formulario de creación
     cy.log('📝 Formulario de creación cargado')
+    
+    // Screenshot del formulario vacío
+    cy.screenshot('02-formulario-creacion-vacio')
     
     // Preparar datos únicos para la licitación
     const timestamp = new Date().getTime()
@@ -62,10 +68,16 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.get('input[name="fecha_cierre"]').type(fechaFormateada)
     cy.wait(500) // Ver la fecha configurada
     
+    // Screenshot del formulario completado (antes de PDF)
+    cy.screenshot('03-formulario-completado')
+    
     // Subir archivo PDF
     cy.get('input[name="pdf"]').selectFile('cypress/fixtures/test-document.pdf')
     cy.wait(1000) // Ver que se subió el archivo
     cy.log('📎 Archivo PDF subido correctamente')
+    
+    // Screenshot final antes de crear
+    cy.screenshot('04-formulario-con-pdf-listo')
     
     // 🚀 CREAR LA LICITACIÓN REAL
     cy.log('💾 Creando licitación en la base de datos...')
@@ -86,6 +98,10 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     // Verificar que se muestra la licitación creada
     cy.get('body').should('contain.text', titulo)
     cy.wait(3000) // Pausa larga para ver la licitación creada
+    
+    // Screenshot de la licitación creada exitosamente
+    cy.screenshot('05-licitacion-creada-exitosamente')
+    
     cy.log('✅ PASO 1 COMPLETADO: Licitación creada exitosamente')
   })
 
@@ -97,6 +113,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.visit('/')
     cy.get('main').should('be.visible')
     cy.wait(2000) // Ver que cargó el listado
+    
+    // Screenshot del listado inicial
+    cy.screenshot('06-listado-inicial')
     
     // Usar datos de la licitación creada
     const searchTerm = licitacionTest.titulo.split(' ')[2] // "Cypress"
@@ -111,6 +130,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
         cy.wrap(searchInput.first()).type(searchTerm)
         cy.wait(1000) // Ver que se escribió la búsqueda
         
+        // Screenshot durante la búsqueda
+        cy.screenshot('07-escribiendo-busqueda')
+        
         // Buscar botón de búsqueda o presionar Enter
         const searchBtn = $body.find('button[type="submit"], .search-btn')
         if (searchBtn.length > 0) {
@@ -121,11 +143,16 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
         
         cy.wait(2000) // Ver los resultados de búsqueda
         
+        // Screenshot de los resultados de búsqueda
+        cy.screenshot('08-resultados-busqueda')
+        
         // Verificar que aparece en resultados
         cy.get('body').should('contain.text', licitacionTest.titulo)
         cy.log('✅ Licitación encontrada en búsqueda')
       } else {
         cy.log('ℹ️ Campo de búsqueda no implementado, verificando en listado general')
+        // Screenshot del listado general
+        cy.screenshot('08-listado-general-sin-busqueda')
         // Verificar que aparece en el listado general
         cy.get('body').should('contain.text', licitacionTest.titulo)
       }
@@ -148,6 +175,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.get('body').should('contain.text', licitacionTest.titulo)
     cy.log('📄 Página de detalle cargada correctamente')
     
+    // Screenshot de la página de detalle completa
+    cy.screenshot('09-detalle-licitacion-completo')
+    
     // Verificar información mostrada
     cy.get('main, .detail-container').should('be.visible')
     cy.wait(2000) // Ver la información completa
@@ -165,6 +195,10 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     })
     
     cy.wait(2000) // Pausa para ver toda la información
+    
+    // Screenshot final del detalle verificado
+    cy.screenshot('10-detalle-verificado')
+    
     cy.log(`✅ PASO 3 COMPLETADO: Detalle de licitación ID ${licitacionTest.id} verificado`)
   })
 
@@ -180,6 +214,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.get('form').should('be.visible')
     cy.get('input[name="titulo"]').should('have.value', licitacionTest.titulo)
     cy.log('📝 Formulario de edición cargado correctamente')
+    
+    // Screenshot del formulario pre-poblado
+    cy.screenshot('11-formulario-edicion-prepoblado')
     
     // Editar estado
     cy.get('select[name="estado"]').select('En_revision')
@@ -199,6 +236,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.wait(1000) // Ver la nueva descripción
     cy.log('📄 Descripción actualizada con marca de edición')
     
+    // Screenshot del formulario modificado antes de guardar
+    cy.screenshot('12-formulario-modificado')
+    
     // Guardar cambios
     cy.log('💾 Guardando cambios...')
     cy.get('button[type="submit"], .save-btn, .btn-primary').click()
@@ -211,6 +251,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.visit(`/licitaciones/${licitacionTest.id}`)
     cy.get('body').should('contain.text', '[EDITADA por Cypress E2E]')
     cy.wait(2000) // Ver los cambios aplicados
+    
+    // Screenshot de la licitación editada
+    cy.screenshot('13-licitacion-editada-exitosamente')
     
     cy.log('✅ PASO 4 COMPLETADO: Licitación editada exitosamente')
   })
@@ -228,6 +271,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.get('body').should('contain.text', licitacionTest.titulo)
     cy.get('body').should('contain.text', '[EDITADA por Cypress E2E]')
     cy.wait(2000) // Ver que aparecen los cambios
+    
+    // Screenshot de verificación de cambios
+    cy.screenshot('14-verificacion-cambios-guardados')
     
     // Verificar estado actualizado
     cy.get('body').then($body => {
@@ -254,6 +300,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.visit(`/licitaciones/${licitacionTest.id}`)
     cy.wait(2000) // Ver la página antes de eliminar
     
+    // Screenshot antes de eliminar
+    cy.screenshot('15-antes-de-eliminar')
+    
     // Buscar botón de eliminar
     cy.get('body').then($body => {
       const deleteBtn = $body.find('button, a').filter(':contains("Eliminar")')
@@ -274,12 +323,19 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
         
         cy.wait(3000) // Pausa larga para ver el proceso de eliminación
         
+        // Screenshot después de eliminar
+        cy.screenshot('16-despues-de-eliminar')
+        
         // Verificar redirección después de eliminar
         cy.url().should('not.include', `/licitaciones/${licitacionTest.id}`, { timeout: 10000 })
         cy.log('✅ Licitación eliminada exitosamente')
       } else {
         // Si no hay botón UI, intentar eliminar via API
         cy.log('ℹ️ Botón de eliminar no encontrado, intentando via API')
+        
+        // Screenshot del problema
+        cy.screenshot('16-boton-eliminar-no-encontrado')
+        
         cy.request({
           method: 'DELETE',
           url: `/api/licitaciones/${licitacionTest.id}`,
@@ -313,7 +369,10 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     // Ir al listado principal
     cy.visit('/')
     cy.wait(2000) // Ver que carga el listado
-    cy.log('� Cargando listado principal para verificar eliminación...')
+    cy.log('📋 Cargando listado principal para verificar eliminación...')
+    
+    // Screenshot del listado para verificación
+    cy.screenshot('17-listado-para-verificar-eliminacion')
     
     // Buscar la licitación eliminada usando filtros/búsqueda
     const searchTerm = licitacionTest.titulo.split(' ')[2] // "Cypress"

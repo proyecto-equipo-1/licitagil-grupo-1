@@ -3,16 +3,27 @@ import { defineConfig } from "cypress";
 export default defineConfig({
   e2e: {
     baseUrl: "http://localhost:5173",
-    viewportWidth: 1280,
-    viewportHeight: 720,
+    viewportWidth: 1920,  // Aumentar resolución para mejor calidad
+    viewportHeight: 1080, // Full HD para videos más claros
     defaultCommandTimeout: 15000,
     requestTimeout: 15000,
     responseTimeout: 15000,
     pageLoadTimeout: 30000,
-    video: false, // Deshabilitar video para desarrollo local
-    screenshotOnRunFailure: true,
+    
+    // 🎥 CONFIGURACIÓN DE VIDEO Y SCREENSHOTS OPTIMIZADA
+    video: true,                    // ✅ Habilitar videos automáticos
+    videoCompression: 32,           // Mejor calidad de video (32 es buena calidad)
+    videosFolder: 'cypress/videos', // Carpeta para videos
+    
+    // 📸 CONFIGURACIÓN DE SCREENSHOTS
+    screenshotOnRunFailure: true,   // Screenshot cuando falla
+    screenshotsFolder: 'cypress/screenshots', // Carpeta para screenshots
+    
+    // 🎯 CONFIGURACIÓN ADICIONAL PARA EVIDENCIAS
+    trashAssetsBeforeRuns: false,   // NO borrar evidencias previas
+    
     retries: {
-      runMode: 2,
+      runMode: 1,     // Menos retries para generar videos más claros
       openMode: 1
     },
     
