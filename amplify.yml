@@ -10,6 +10,7 @@ frontend:
     build:
       commands:
         - echo "Building React application..."
+        - cd web
         - echo "VITE_API_URL=https://mqru1bnmg2.execute-api.us-east-1.amazonaws.com/dev" > .env.production
         - npm run build -- --mode production
   artifacts:
