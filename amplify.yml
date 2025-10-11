@@ -6,10 +6,11 @@ frontend:
         - echo "Installing dependencies..."
         - cd web
         - npm ci
+        - npm install aws-amplify
     build:
       commands:
         - echo "Building React application..."
-        - npm run build
+        - npm run build -- --mode production
   artifacts:
     baseDirectory: web/dist
     files:
