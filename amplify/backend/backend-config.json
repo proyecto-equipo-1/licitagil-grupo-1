@@ -1,1 +1,43 @@
-{}
+{
+  "api": {
+    "licitagilAPI": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "licitagilFunction"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "API Gateway"
+    }
+  },
+  "function": {
+    "licitagilFunction": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_licitagilFunction_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "licitagilFunction"
+        }
+      ]
+    },
+    "AMPLIFY_function_licitagilFunction_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "licitagilFunction"
+        }
+      ]
+    }
+  }
+}
