@@ -45,25 +45,27 @@ export default function EditPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    // Enviar como FormData si hay archivo o se desea eliminar
     if (!form) return;
-    const hasFile = pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0];
-    if (hasFile || removePdf) {
-      const fd = new FormData();
-      fd.append('titulo', form.titulo);
-      fd.append('descripcion', form.descripcion);
-      fd.append('estado', form.estado);
-      fd.append('fecha_cierre', form.fecha_cierre);
-      if (hasFile && pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0]) {
-        fd.append('pdf', pdfInputRef.current.files[0]);
-      }
-      if (removePdf) fd.append('removePdf', '1');
-      const res = await fetch(`/api/licitaciones/${id}`, { method: 'PUT', body: fd });
-      if (!res.ok) throw new Error(await res.text());
-    } else {
-      await fetchJSON(`/api/licitaciones/${id}`, { method: 'PUT', body: JSON.stringify(form) });
+    
+    try {
+      // Actualizar licitación (sin archivos por ahora)
+      const licitacionData = {
+        titulo: form.titulo,
+        descripcion: form.descripcion,
+        estado: form.estado,
+        fechaCierre: form.fecha_cierre
+      };
+      
+      await fetchJSON(`/api/licitaciones/${id}`, { 
+        method: 'PUT', 
+        body: JSON.stringify(licitacionData) 
+      });
+      
+      nav(`/`);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al actualizar la licitación');
     }
-    nav(`/`);
   }
 
   return (

@@ -13,6 +13,7 @@ const awsServerlessExpressMiddleware = require('aws-serverless-express/middlewar
 // declare a new express app
 const app = express()
 app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(awsServerlessExpressMiddleware.eventContext())
 
 // Enable CORS for all methods
@@ -38,7 +39,7 @@ let licitaciones = [
     titulo: "Construcción de Puente",
     descripcion: "Licitación para la construcción de puente vehicular",
     fechaCreacion: "2025-10-01T10:00:00Z",
-    fechaLimite: "2025-12-15T23:59:59Z",
+    fechaCierre: "2025-12-15T23:59:59Z",
     estado: "ABIERTA",
     presupuestoMinimo: 100000,
     presupuestoMaximo: 500000,
@@ -54,7 +55,7 @@ let licitaciones = [
     titulo: "Suministro de Equipos Médicos",
     descripcion: "Adquisición de equipos médicos para hospital",
     fechaCreacion: "2025-10-05T14:30:00Z",
-    fechaLimite: "2025-11-30T18:00:00Z",
+    fechaCierre: "2025-11-30T18:00:00Z",
     estado: "ABIERTA",
     presupuestoMinimo: 50000,
     presupuestoMaximo: 200000,
@@ -128,7 +129,7 @@ app.post('/api/licitaciones', function(req, res) {
     titulo: req.body.titulo || '',
     descripcion: req.body.descripcion || '',
     fechaCreacion: new Date().toISOString(),
-    fechaLimite: req.body.fechaLimite || '',
+    fechaCierre: req.body.fechaCierre || req.body.fecha_cierre || '',
     estado: req.body.estado || 'ABIERTA',
     presupuestoMinimo: Number(req.body.presupuestoMinimo) || 0,
     presupuestoMaximo: Number(req.body.presupuestoMaximo) || 0,
