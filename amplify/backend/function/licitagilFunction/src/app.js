@@ -9,6 +9,23 @@ See the License for the specific language governing permissions and limitations 
 const express = require('express')
 const bodyParser = require('body-parser')
 const awsServerlessExpressMiddleware = require('aws-serverless-express/middleware')
+const multer = require('multer')
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage()
+const upload = multer({ 
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true)
+    } else {
+      cb(new Error('Solo se permiten archivos PDF'), false)
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB max
+  }
+})
 
 // declare a new express app
 const app = express()
@@ -48,7 +65,10 @@ let licitaciones = [
     contactoEmail: "licitaciones@municentral.gov",
     contactoTelefono: "+1234567890",
     ubicacion: "Ciudad Central",
-    modalidad: "PRESENCIAL"
+    modalidad: "PRESENCIAL",
+    pdfPath: null,
+    pdfOriginalName: null,
+    pdfData: null
   },
   {
     id: 2,
@@ -64,7 +84,10 @@ let licitaciones = [
     contactoEmail: "compras@hospital.gov",
     contactoTelefono: "+1234567891",
     ubicacion: "Región Norte",
-    modalidad: "VIRTUAL"
+    modalidad: "VIRTUAL",
+    pdfPath: null,
+    pdfOriginalName: null,
+    pdfData: null
   }
 ];
 
@@ -121,7 +144,7 @@ app.get('/api/licitaciones/:id', function(req, res) {
 });
 
 // POST /api/licitaciones - Crear nueva licitación
-app.post('/api/licitaciones', function(req, res) {
+app.post('/api/licitaciones', upload.single('pdf'), function(req, res) {
   const newId = Math.max(...licitaciones.map(l => l.id), 0) + 1;
   
   const newLicitacion = {
@@ -138,15 +161,25 @@ app.post('/api/licitaciones', function(req, res) {
     contactoEmail: req.body.contactoEmail || '',
     contactoTelefono: req.body.contactoTelefono || '',
     ubicacion: req.body.ubicacion || '',
-    modalidad: req.body.modalidad || 'PRESENCIAL'
+    modalidad: req.body.modalidad || 'PRESENCIAL',
+    pdfPath: null,
+    pdfOriginalName: null,
+    pdfData: null
   };
+  
+  // Si se subió un archivo PDF
+  if (req.file) {
+    newLicitacion.pdfData = req.file.buffer.toString('base64');
+    newLicitacion.pdfOriginalName = req.file.originalname;
+    newLicitacion.pdfPath = `/api/licitaciones/${newId}/pdf`;
+  }
   
   licitaciones.push(newLicitacion);
   res.status(201).json(newLicitacion);
 });
 
 // PUT /api/licitaciones/:id - Actualizar licitación
-app.put('/api/licitaciones/:id', function(req, res) {
+app.put('/api/licitaciones/:id', upload.single('pdf'), function(req, res) {
   const id = Number(req.params.id);
   const index = licitaciones.findIndex(lic => lic.id === id);
   
@@ -159,6 +192,20 @@ app.put('/api/licitaciones/:id', function(req, res) {
     ...req.body,
     id: id // Preservar el ID
   };
+  
+  // Si se subió un nuevo archivo PDF
+  if (req.file) {
+    updatedLicitacion.pdfData = req.file.buffer.toString('base64');
+    updatedLicitacion.pdfOriginalName = req.file.originalname;
+    updatedLicitacion.pdfPath = `/api/licitaciones/${id}/pdf`;
+  }
+  
+  // Si se solicita eliminar el PDF
+  if (req.body.removePdf === '1' || req.body.removePdf === true) {
+    updatedLicitacion.pdfData = null;
+    updatedLicitacion.pdfOriginalName = null;
+    updatedLicitacion.pdfPath = null;
+  }
   
   licitaciones[index] = updatedLicitacion;
   res.json(updatedLicitacion);
@@ -175,6 +222,55 @@ app.delete('/api/licitaciones/:id', function(req, res) {
   
   licitaciones.splice(index, 1);
   res.json({ message: 'Licitación eliminada exitosamente' });
+});
+
+// GET /api/licitaciones/:id/pdf - Obtener PDF de licitación
+app.get('/api/licitaciones/:id/pdf', function(req, res) {
+  const id = Number(req.params.id);
+  const licitacion = licitaciones.find(lic => lic.id === id);
+  
+  if (!licitacion) {
+    return res.status(404).json({ error: 'Licitación no encontrada' });
+  }
+  
+  if (!licitacion.pdfData) {
+    return res.status(404).json({ error: 'PDF no encontrado para esta licitación' });
+  }
+  
+  // Servir el PDF desde memoria
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `inline; filename="${licitacion.pdfOriginalName || 'documento.pdf'}"`
+  });
+  
+  const pdfBuffer = Buffer.from(licitacion.pdfData, 'base64');
+  res.send(pdfBuffer);
+});
+
+// POST /api/licitaciones/:id/pdf - Subir PDF para licitación
+app.post('/api/licitaciones/:id/pdf', upload.single('pdf'), function(req, res) {
+  const id = Number(req.params.id);
+  const licitacion = licitaciones.find(lic => lic.id === id);
+  
+  if (!licitacion) {
+    return res.status(404).json({ error: 'Licitación no encontrada' });
+  }
+  
+  if (!req.file) {
+    return res.status(400).json({ error: 'No se ha subido ningún archivo PDF' });
+  }
+  
+  // Guardar el archivo en memoria como base64
+  licitacion.pdfData = req.file.buffer.toString('base64');
+  licitacion.pdfOriginalName = req.file.originalname;
+  licitacion.pdfPath = `/api/licitaciones/${id}/pdf`;
+  
+  res.json({ 
+    message: 'PDF subido exitosamente',
+    pdfPath: licitacion.pdfPath,
+    originalName: licitacion.pdfOriginalName,
+    size: req.file.size
+  });
 });
 
 // Health check endpoint

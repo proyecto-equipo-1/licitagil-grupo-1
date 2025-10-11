@@ -48,18 +48,46 @@ export default function EditPage() {
     if (!form) return;
     
     try {
-      // Actualizar licitación (sin archivos por ahora)
-      const licitacionData = {
-        titulo: form.titulo,
-        descripcion: form.descripcion,
-        estado: form.estado,
-        fechaCierre: form.fecha_cierre
-      };
+      const hasFile = pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0];
       
-      await fetchJSON(`/api/licitaciones/${id}`, { 
-        method: 'PUT', 
-        body: JSON.stringify(licitacionData) 
-      });
+      if (hasFile || removePdf) {
+        // Si hay archivo o se quiere eliminar, usar FormData
+        const formData = new FormData();
+        formData.append('titulo', form.titulo);
+        formData.append('descripcion', form.descripcion);
+        formData.append('estado', form.estado);
+        formData.append('fechaCierre', form.fecha_cierre);
+        
+        if (hasFile && pdfInputRef.current?.files?.[0]) {
+          formData.append('pdf', pdfInputRef.current.files[0]);
+        }
+        
+        if (removePdf) {
+          formData.append('removePdf', '1');
+        }
+        
+        const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/${id}`, {
+          method: 'PUT',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al actualizar la licitación');
+        }
+      } else {
+        // Si no hay cambios de archivo, usar JSON
+        const licitacionData = {
+          titulo: form.titulo,
+          descripcion: form.descripcion,
+          estado: form.estado,
+          fechaCierre: form.fecha_cierre
+        };
+        
+        await fetchJSON(`/api/licitaciones/${id}`, { 
+          method: 'PUT', 
+          body: JSON.stringify(licitacionData) 
+        });
+      }
       
       nav(`/`);
     } catch (error) {
