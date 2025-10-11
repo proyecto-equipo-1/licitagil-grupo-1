@@ -30,7 +30,7 @@ npm run seed            # poblar BD con datos iniciales
 npm run dev             # http://localhost:3000/healthz
 
 # 3) Web
-cd ../web
+cd /web
 cp .env.example .env    # si no existe el .env
 npm i                       # instalar dependencias
 npm install @vitejs/plugin-react --save-dev  # plugin de Vite faltante

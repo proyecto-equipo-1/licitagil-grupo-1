@@ -1,0 +1,61 @@
+{
+  "licitacionesPrueba": {
+    "basica": {
+      "titulo": "Licitación de Prueba Básica",
+      "descripcion": "Esta es una descripción de prueba para una licitación básica que debe tener al menos 10 caracteres como requiere la validación.",
+      "estado": "Abierta"
+    },
+    "completa": {
+      "titulo": "Licitación Completa para Testing E2E",
+      "descripcion": "Descripción completa de una licitación que incluye todos los campos requeridos y será utilizada para pruebas exhaustivas del sistema.",
+      "estado": "En_revision"
+    },
+    "cerrada": {
+      "titulo": "Licitación Cerrada de Ejemplo",
+      "descripcion": "Esta licitación está en estado cerrado y se utiliza para probar los filtros y estados del sistema.",
+      "estado": "Cerrada"
+    },
+    "busqueda": {
+      "titulo": "BUSQUEDA TEST Licitación Especial",
+      "descripcion": "Licitación específica para probar la funcionalidad de búsqueda por título.",
+      "estado": "Abierta"
+    },
+    "edicion": {
+      "titulo": "Licitación para Editar",
+      "descripcion": "Esta licitación será editada durante las pruebas para verificar la funcionalidad de actualización.",
+      "estado": "Abierta"
+    }
+  },
+  "datosInvalidos": {
+    "tituloCorto": {
+      "titulo": "AB",
+      "descripcion": "Descripción válida para prueba de validación.",
+      "estado": "Abierta"
+    },
+    "descripcionCorta": {
+      "titulo": "Título válido para prueba",
+      "descripcion": "Corta",
+      "estado": "Abierta"
+    },
+    "fechaPasada": {
+      "titulo": "Licitación con fecha pasada",
+      "descripcion": "Licitación para probar validación de fechas.",
+      "estado": "Abierta",
+      "fechaCierre": "2020-01-01T10:00"
+    }
+  },
+  "terminosBusqueda": [
+    "BUSQUEDA",
+    "busqueda", 
+    "BuSqUeDa",
+    "búsqueda",
+    "test",
+    "especial"
+  ],
+  "estadosFiltro": [
+    "Todas",
+    "Abierta",
+    "En_revision", 
+    "Cerrada"
+  ]
+}
