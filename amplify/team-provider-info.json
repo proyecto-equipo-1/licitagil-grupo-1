@@ -1,0 +1,15 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-licitagilgrupo1-dev-a7852-authRole",
+      "UnauthRoleArn": "arn:aws:iam::470830536511:role/amplify-licitagilgrupo1-dev-a7852-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::470830536511:role/amplify-licitagilgrupo1-dev-a7852-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-licitagilgrupo1-dev-a7852-deployment",
+      "UnauthRoleName": "amplify-licitagilgrupo1-dev-a7852-unauthRole",
+      "StackName": "amplify-licitagilgrupo1-dev-a7852",
+      "StackId": "arn:aws:cloudformation:us-east-1:470830536511:stack/amplify-licitagilgrupo1-dev-a7852/ec457c60-a6df-11f0-8f0b-0e588614b1d9",
+      "AmplifyAppId": "d386d94bix0hzl"
+    }
+  }
+}
