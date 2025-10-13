@@ -237,16 +237,35 @@ app.get('/api/licitaciones/:id/pdf', function(req, res) {
     return res.status(404).json({ error: 'PDF no encontrado para esta licitación' });
   }
   
-  // Servir el PDF desde memoria
-  res.set({
-    'Content-Type': 'application/pdf',
-    'Content-Disposition': `inline; filename="${licitacion.pdfOriginalName || 'documento.pdf'}"`,
-    'Cache-Control': 'no-cache',
-    'X-Content-Type-Options': 'nosniff'
-  });
-  
-  const pdfBuffer = Buffer.from(licitacion.pdfData, 'base64');
-  res.send(pdfBuffer);
+  try {
+    // Validar que el base64 sea válido
+    const pdfBuffer = Buffer.from(licitacion.pdfData, 'base64');
+    
+    // Verificar que el buffer tiene contenido y comienza con la signatura PDF
+    if (pdfBuffer.length === 0) {
+      return res.status(500).json({ error: 'El archivo PDF está vacío' });
+    }
+    
+    // Verificar signatura PDF (%PDF-)
+    const pdfSignature = pdfBuffer.slice(0, 4).toString();
+    if (pdfSignature !== '%PDF') {
+      return res.status(500).json({ error: 'El archivo no es un PDF válido' });
+    }
+    
+    // Servir el PDF desde memoria
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${licitacion.pdfOriginalName || 'documento.pdf'}"`,
+      'Cache-Control': 'no-cache',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Length': pdfBuffer.length
+    });
+    
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error al procesar PDF:', error);
+    return res.status(500).json({ error: 'Error al procesar el archivo PDF' });
+  }
 });
 
 // POST /api/licitaciones/:id/pdf - Subir PDF para licitación
@@ -262,27 +281,53 @@ app.post('/api/licitaciones/:id/pdf', upload.single('pdf'), function(req, res) {
     return res.status(400).json({ error: 'No se ha subido ningún archivo PDF' });
   }
   
-  // Guardar el archivo en memoria como base64
-  licitacion.pdfData = req.file.buffer.toString('base64');
-  licitacion.pdfOriginalName = req.file.originalname;
-  licitacion.pdfPath = `/api/licitaciones/${id}/pdf`;
-  
-  res.json({ 
-    message: 'PDF subido exitosamente',
-    pdfPath: licitacion.pdfPath,
-    originalName: licitacion.pdfOriginalName,
-    size: req.file.size
-  });
+  try {
+    // Verificar que el archivo es un PDF válido
+    const pdfSignature = req.file.buffer.slice(0, 4).toString();
+    if (pdfSignature !== '%PDF') {
+      return res.status(400).json({ error: 'El archivo no es un PDF válido' });
+    }
+    
+    // Guardar el archivo en memoria como base64
+    licitacion.pdfData = req.file.buffer.toString('base64');
+    licitacion.pdfOriginalName = req.file.originalname;
+    licitacion.pdfPath = `/api/licitaciones/${id}/pdf`;
+    
+    console.log(`PDF guardado para licitación ${id}: ${req.file.originalname}, tamaño: ${req.file.size} bytes`);
+    
+    res.json({ 
+      message: 'PDF subido exitosamente',
+      pdfPath: licitacion.pdfPath,
+      originalName: licitacion.pdfOriginalName,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Error al procesar la subida del PDF:', error);
+    return res.status(500).json({ error: 'Error al procesar el archivo PDF' });
+  }
 });
 
 // Health check endpoint
 app.get('/api/health', function(req, res) {
   res.json({ 
-    status: 'OK', 
-    message: 'LicitAgil API funcionando correctamente',
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    environment: 'AWS Lambda'
   });
+});
+
+// Debug endpoint para revisar estado de PDFs
+app.get('/api/debug/licitaciones', function(req, res) {
+  const debug = licitaciones.map(lic => ({
+    id: lic.id,
+    titulo: lic.titulo,
+    pdfOriginalName: lic.pdfOriginalName,
+    hasPdfData: !!lic.pdfData,
+    pdfDataLength: lic.pdfData ? lic.pdfData.length : 0,
+    pdfPath: lic.pdfPath
+  }));
+  
+  res.json(debug);
 });
 
 // Catch all for debugging
