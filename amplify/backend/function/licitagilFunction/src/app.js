@@ -240,7 +240,9 @@ app.get('/api/licitaciones/:id/pdf', function(req, res) {
   // Servir el PDF desde memoria
   res.set({
     'Content-Type': 'application/pdf',
-    'Content-Disposition': `inline; filename="${licitacion.pdfOriginalName || 'documento.pdf'}"`
+    'Content-Disposition': `inline; filename="${licitacion.pdfOriginalName || 'documento.pdf'}"`,
+    'Cache-Control': 'no-cache',
+    'X-Content-Type-Options': 'nosniff'
   });
   
   const pdfBuffer = Buffer.from(licitacion.pdfData, 'base64');
