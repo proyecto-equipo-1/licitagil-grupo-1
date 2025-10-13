@@ -15,7 +15,7 @@
       "function": {
         "licitagilFunction": {
           "deploymentBucketName": "amplify-licitagilgrupo1-dev-a7852-deployment",
-          "s3Key": "amplify-builds/licitagilFunction-462b347062566d764a5a-build.zip"
+          "s3Key": "amplify-builds/licitagilFunction-616a6a2b764a31343362-build.zip"
         }
       },
       "api": {

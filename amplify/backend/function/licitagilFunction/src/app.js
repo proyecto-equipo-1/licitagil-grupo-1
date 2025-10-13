@@ -23,7 +23,7 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB max
+    fileSize: 2 * 1024 * 1024 // 2MB max (AWS Lambda límite)
   }
 })
 
