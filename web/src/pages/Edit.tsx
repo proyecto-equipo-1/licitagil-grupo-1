@@ -172,7 +172,7 @@ export default function EditPage() {
         {pdfPath ? (
             <div>
                 <div style={{ marginBottom: 6 }}>
-                  <a href={`/api/licitaciones/${id}/pdf`} target="_blank" rel="noreferrer">{pdfOriginalName || pdfPath.split('/').pop()}</a>
+                  <a href={`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/${id}/pdf`} target="_blank" rel="noreferrer">{pdfOriginalName || pdfPath.split('/').pop()}</a>
                 </div>
                 <div>
                   <label><input type="checkbox" checked={removePdf} onChange={e => setRemovePdf(e.target.checked)} /> Eliminar PDF</label>

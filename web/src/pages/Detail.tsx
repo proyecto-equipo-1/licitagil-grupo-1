@@ -47,7 +47,7 @@ export default function Detail() {
         <div className="detalle-pdf-viewer">
           {!pdfError ? (
             <iframe
-              src={`/api/licitaciones/${id}/pdf`}
+              src={`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/${id}/pdf`}
               title="PDF de la licitación"
               onError={handlePdfError}
               style={{ border: 'none' }}
@@ -70,7 +70,7 @@ export default function Detail() {
           )}
           <div style={{ marginTop: 16, textAlign: 'center' }}>
           {lic.pdfOriginalName && <div style={{ marginBottom: 6, fontSize: 14 }}>{lic.pdfOriginalName}</div>}
-            <a href={`/api/licitaciones/${id}/pdf?download=1`} target="_blank" rel="noopener noreferrer" className="btn btn-pdf">
+            <a href={`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/${id}/pdf`} target="_blank" rel="noopener noreferrer" className="btn btn-pdf">
               📄 Descargar PDF
             </a>
           </div>
