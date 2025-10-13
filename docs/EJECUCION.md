@@ -30,7 +30,7 @@ npm run seed            # poblar BD con datos iniciales
 npm run dev             # http://localhost:3000/healthz
 
 # 3) Web
-cd ../web
+cd /web
 cp .env.example .env    # si no existe el .env
 npm i                       # instalar dependencias
 npm install @vitejs/plugin-react --save-dev  # plugin de Vite faltante
@@ -80,8 +80,6 @@ docker compose up -d db
 ```powershell
 cd api
 npm install
-# Si se hicieron cambios en prisma/schema.prisma:
-npx prisma migrate dev --name add-pdf-originalname
 npx prisma generate
 ```
 
@@ -101,8 +99,6 @@ if (-not (Test-Path .\uploads)) { New-Item -ItemType Directory -Path .\uploads }
 ```powershell
 cd api
 npm run dev
-# o en producción
-npm run build
 npm start
 ```
 
@@ -111,8 +107,6 @@ npm start
 ```powershell
 cd ..\web
 npm install
-npm run dev
-# o en producción
 npm run build
 ```
 

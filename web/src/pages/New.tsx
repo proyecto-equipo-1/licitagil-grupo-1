@@ -29,24 +29,50 @@ export default function NewPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append('titulo', form.titulo);
-    formData.append('descripcion', form.descripcion);
-    formData.append('estado', form.estado);
-    formData.append('fecha_cierre', form.fecha_cierre);
-    if (pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0]) {
-      formData.append('pdf', pdfInputRef.current.files[0]);
-    }
-    const res = await fetch('/api/licitaciones', {
-      method: 'POST',
-      body: formData
-    });
-    if (!res.ok) {
+    
+    try {
+      const hasFile = pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0];
+      
+      if (hasFile && pdfInputRef.current?.files?.[0]) {
+        // Si hay archivo, usar FormData
+        const formData = new FormData();
+        formData.append('titulo', form.titulo);
+        formData.append('descripcion', form.descripcion);
+        formData.append('estado', form.estado);
+        formData.append('fechaCierre', form.fecha_cierre);
+        formData.append('pdf', pdfInputRef.current.files[0]);
+        
+        const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al crear la licitación');
+        }
+        
+        const lic = await response.json();
+        nav(`/licitaciones/${lic.id}`);
+      } else {
+        // Si no hay archivo, usar JSON
+        const licitacionData = {
+          titulo: form.titulo,
+          descripcion: form.descripcion,
+          estado: form.estado,
+          fechaCierre: form.fecha_cierre
+        };
+        
+        const lic = await fetchJSON('/api/licitaciones', {
+          method: 'POST',
+          body: JSON.stringify(licitacionData)
+        });
+        
+        nav(`/licitaciones/${lic.id}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
       alert('Error al crear la licitación');
-      return;
     }
-    const lic = await res.json();
-    nav(`/licitaciones/${lic.id}`);
   }
 
   return (

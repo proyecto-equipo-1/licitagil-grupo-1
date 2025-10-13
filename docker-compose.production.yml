@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # Backend API
+  api:
+    build: 
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://licitagil_user:secure_password@db:5432/licitagil_prod
+      - JWT_SECRET=your-super-secure-jwt-secret-change-this
+      - PORT=3000
+    depends_on:
+      - db
+    volumes:
+      - ./api/uploads:/app/uploads
+    restart: unless-stopped
+    networks:
+      - licitagil-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=licitagil_prod
+      - POSTGRES_USER=licitagil_user
+      - POSTGRES_PASSWORD=secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./api/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - licitagil-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U licitagil_user -d licitagil_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend (React) - Solo para testing local
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - licitagil-network
+    environment:
+      - VITE_API_URL=http://api:3000
+
+# Volumes persistentes
+volumes:
+  postgres_data:
+    driver: local
+
+# Red personalizada
+networks:
+  licitagil-network:
+    driver: bridge

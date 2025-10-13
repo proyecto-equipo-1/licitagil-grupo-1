@@ -8,7 +8,18 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "cypress:run:headless": "cypress run --headless",
+    "cypress:run:chrome": "cypress run --browser chrome",
+    "cypress:run:firefox": "cypress run --browser firefox",
+    "test:e2e": "cypress run",
+    "test:e2e:dev": "cypress open",
+    "test:crud": "cypress run --spec 'cypress/e2e/crud-completo.cy.ts'",
+    "test:search": "cypress run --spec 'cypress/e2e/busqueda-filtros.cy.ts'",
+    "test:validation": "cypress run --spec 'cypress/e2e/validaciones-errores.cy.ts'",
+    "test:pdf": "cypress run --spec 'cypress/e2e/gestion-pdfs.cy.ts'",
+    "test:basic": "cypress run --spec 'cypress/e2e/flujo-basico.cy.ts'",
+    "test:all": "npm run test:basic && npm run test:crud && npm run test:search && npm run test:validation && npm run test:pdf"
   },
   "dependencies": {
     "react": "^18.3.1",
