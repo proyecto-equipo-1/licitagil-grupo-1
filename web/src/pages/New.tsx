@@ -33,6 +33,22 @@ export default function NewPage() {
     try {
       const hasFile = pdfInputRef.current && pdfInputRef.current.files && pdfInputRef.current.files[0];
       
+      // Validar tamaño del archivo
+      if (hasFile && pdfInputRef.current?.files?.[0]) {
+        const file = pdfInputRef.current.files[0];
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        
+        if (file.size > maxSize) {
+          alert('El archivo PDF es demasiado grande. El tamaño máximo permitido es 2MB.');
+          return;
+        }
+        
+        if (file.type !== 'application/pdf') {
+          alert('Solo se permiten archivos PDF.');
+          return;
+        }
+      }
+      
       if (hasFile && pdfInputRef.current?.files?.[0]) {
         // Si hay archivo, usar FormData
         const formData = new FormData();
@@ -131,15 +147,17 @@ export default function NewPage() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="pdf">PDF de la licitación (opcional)</label>
+        <label htmlFor="pdf">PDF de la licitación (opcional, máx. 2MB)</label>
         <input 
           type="file"
           id="pdf"
           name="pdf"
           accept="application/pdf"
           ref={pdfInputRef}
-          required
         />
+        <small style={{color: '#666', fontSize: '0.9em'}}>
+          Solo archivos PDF. Tamaño máximo: 2MB
+        </small>
       </div>
 
       <div className="form-actions">

@@ -23,7 +23,7 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB max
+    fileSize: 2 * 1024 * 1024 // 2MB max (AWS Lambda límite)
   }
 })
 
@@ -50,44 +50,38 @@ app.options('*', function(req, res) {
 });
 
 // Mock data for development - replace with DynamoDB later
+// Datos mock de licitaciones
 let licitaciones = [
   {
     id: 1,
-    titulo: "Construcción de Puente",
-    descripcion: "Licitación para la construcción de puente vehicular",
-    fechaCreacion: "2025-10-01T10:00:00Z",
-    fechaCierre: "2025-12-15T23:59:59Z",
-    estado: "ABIERTA",
-    presupuestoMinimo: 100000,
-    presupuestoMaximo: 500000,
-    categoria: "Infraestructura",
-    organizacion: "Municipalidad Central",
-    contactoEmail: "licitaciones@municentral.gov",
-    contactoTelefono: "+1234567890",
-    ubicacion: "Ciudad Central",
-    modalidad: "PRESENCIAL",
-    pdfPath: null,
+    titulo: 'Construcción de Puente',
+    descripcion: 'Construcción de puente peatonal sobre río principal de la ciudad',
+    estado: 'Abierta',
+    fechaCierre: new Date('2024-12-15T23:59:59').toISOString(),
+    pdfData: null,
     pdfOriginalName: null,
-    pdfData: null
+    pdfPath: null
   },
   {
     id: 2,
-    titulo: "Suministro de Equipos Médicos",
-    descripcion: "Adquisición de equipos médicos para hospital",
-    fechaCreacion: "2025-10-05T14:30:00Z",
-    fechaCierre: "2025-11-30T18:00:00Z",
-    estado: "ABIERTA",
-    presupuestoMinimo: 50000,
-    presupuestoMaximo: 200000,
-    categoria: "Salud",
-    organizacion: "Hospital Regional",
-    contactoEmail: "compras@hospital.gov",
-    contactoTelefono: "+1234567891",
-    ubicacion: "Región Norte",
-    modalidad: "VIRTUAL",
-    pdfPath: null,
+    titulo: 'Suministro de Equipos Médicos',
+    descripcion: 'Adquisición de equipos médicos para hospital central',
+    estado: 'Cerrada',
+    fechaCierre: new Date('2024-11-20T23:59:59').toISOString(),
+    pdfData: null,
     pdfOriginalName: null,
-    pdfData: null
+    pdfPath: null
+  },
+  {
+    id: 3,
+    titulo: 'Licitación de Prueba PDF',
+    descripcion: 'Licitación para probar funcionalidad de PDFs',
+    estado: 'Abierta',
+    fechaCierre: new Date('2025-01-15T23:59:59').toISOString(),
+    // PDF de prueba simple (PDF mínimo válido en base64)
+    pdfData: 'JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCi9GMSA0OCBUZA01MCA3NTAgVGQKKFBERiBkZSBQcnVlYmEpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjQ1IDAwMDAwIG4gCjAwMDAwMDAzMjQgMDAwMDAgbiAKdHJhaWxlcgo8PAovU2l6ZSA2Ci9Sb290IDEgMCBSCj4+CnN0YXJ0eHJlZgo0MTgKJSVFT0Y=',
+    pdfOriginalName: 'documento-prueba.pdf',
+    pdfPath: '/api/licitaciones/3/pdf'
   }
 ];
 
@@ -237,14 +231,35 @@ app.get('/api/licitaciones/:id/pdf', function(req, res) {
     return res.status(404).json({ error: 'PDF no encontrado para esta licitación' });
   }
   
-  // Servir el PDF desde memoria
-  res.set({
-    'Content-Type': 'application/pdf',
-    'Content-Disposition': `inline; filename="${licitacion.pdfOriginalName || 'documento.pdf'}"`
-  });
-  
-  const pdfBuffer = Buffer.from(licitacion.pdfData, 'base64');
-  res.send(pdfBuffer);
+  try {
+    // Validar que el base64 sea válido
+    const pdfBuffer = Buffer.from(licitacion.pdfData, 'base64');
+    
+    // Verificar que el buffer tiene contenido y comienza con la signatura PDF
+    if (pdfBuffer.length === 0) {
+      return res.status(500).json({ error: 'El archivo PDF está vacío' });
+    }
+    
+    // Verificar signatura PDF (%PDF-)
+    const pdfSignature = pdfBuffer.slice(0, 4).toString();
+    if (pdfSignature !== '%PDF') {
+      return res.status(500).json({ error: 'El archivo no es un PDF válido' });
+    }
+    
+    // Servir el PDF desde memoria
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${licitacion.pdfOriginalName || 'documento.pdf'}"`,
+      'Cache-Control': 'no-cache',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Length': pdfBuffer.length
+    });
+    
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error al procesar PDF:', error);
+    return res.status(500).json({ error: 'Error al procesar el archivo PDF' });
+  }
 });
 
 // POST /api/licitaciones/:id/pdf - Subir PDF para licitación
@@ -260,27 +275,53 @@ app.post('/api/licitaciones/:id/pdf', upload.single('pdf'), function(req, res) {
     return res.status(400).json({ error: 'No se ha subido ningún archivo PDF' });
   }
   
-  // Guardar el archivo en memoria como base64
-  licitacion.pdfData = req.file.buffer.toString('base64');
-  licitacion.pdfOriginalName = req.file.originalname;
-  licitacion.pdfPath = `/api/licitaciones/${id}/pdf`;
-  
-  res.json({ 
-    message: 'PDF subido exitosamente',
-    pdfPath: licitacion.pdfPath,
-    originalName: licitacion.pdfOriginalName,
-    size: req.file.size
-  });
+  try {
+    // Verificar que el archivo es un PDF válido
+    const pdfSignature = req.file.buffer.slice(0, 4).toString();
+    if (pdfSignature !== '%PDF') {
+      return res.status(400).json({ error: 'El archivo no es un PDF válido' });
+    }
+    
+    // Guardar el archivo en memoria como base64
+    licitacion.pdfData = req.file.buffer.toString('base64');
+    licitacion.pdfOriginalName = req.file.originalname;
+    licitacion.pdfPath = `/api/licitaciones/${id}/pdf`;
+    
+    console.log(`PDF guardado para licitación ${id}: ${req.file.originalname}, tamaño: ${req.file.size} bytes`);
+    
+    res.json({ 
+      message: 'PDF subido exitosamente',
+      pdfPath: licitacion.pdfPath,
+      originalName: licitacion.pdfOriginalName,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Error al procesar la subida del PDF:', error);
+    return res.status(500).json({ error: 'Error al procesar el archivo PDF' });
+  }
 });
 
 // Health check endpoint
 app.get('/api/health', function(req, res) {
   res.json({ 
-    status: 'OK', 
-    message: 'LicitAgil API funcionando correctamente',
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    environment: 'AWS Lambda'
   });
+});
+
+// Debug endpoint para revisar estado de PDFs
+app.get('/api/debug/licitaciones', function(req, res) {
+  const debug = licitaciones.map(lic => ({
+    id: lic.id,
+    titulo: lic.titulo,
+    pdfOriginalName: lic.pdfOriginalName,
+    hasPdfData: !!lic.pdfData,
+    pdfDataLength: lic.pdfData ? lic.pdfData.length : 0,
+    pdfPath: lic.pdfPath
+  }));
+  
+  res.json(debug);
 });
 
 // Catch all for debugging
