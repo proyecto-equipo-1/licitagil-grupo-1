@@ -50,44 +50,38 @@ app.options('*', function(req, res) {
 });
 
 // Mock data for development - replace with DynamoDB later
+// Datos mock de licitaciones
 let licitaciones = [
   {
     id: 1,
-    titulo: "Construcción de Puente",
-    descripcion: "Licitación para la construcción de puente vehicular",
-    fechaCreacion: "2025-10-01T10:00:00Z",
-    fechaCierre: "2025-12-15T23:59:59Z",
-    estado: "ABIERTA",
-    presupuestoMinimo: 100000,
-    presupuestoMaximo: 500000,
-    categoria: "Infraestructura",
-    organizacion: "Municipalidad Central",
-    contactoEmail: "licitaciones@municentral.gov",
-    contactoTelefono: "+1234567890",
-    ubicacion: "Ciudad Central",
-    modalidad: "PRESENCIAL",
-    pdfPath: null,
+    titulo: 'Construcción de Puente',
+    descripcion: 'Construcción de puente peatonal sobre río principal de la ciudad',
+    estado: 'Abierta',
+    fechaCierre: new Date('2024-12-15T23:59:59').toISOString(),
+    pdfData: null,
     pdfOriginalName: null,
-    pdfData: null
+    pdfPath: null
   },
   {
     id: 2,
-    titulo: "Suministro de Equipos Médicos",
-    descripcion: "Adquisición de equipos médicos para hospital",
-    fechaCreacion: "2025-10-05T14:30:00Z",
-    fechaCierre: "2025-11-30T18:00:00Z",
-    estado: "ABIERTA",
-    presupuestoMinimo: 50000,
-    presupuestoMaximo: 200000,
-    categoria: "Salud",
-    organizacion: "Hospital Regional",
-    contactoEmail: "compras@hospital.gov",
-    contactoTelefono: "+1234567891",
-    ubicacion: "Región Norte",
-    modalidad: "VIRTUAL",
-    pdfPath: null,
+    titulo: 'Suministro de Equipos Médicos',
+    descripcion: 'Adquisición de equipos médicos para hospital central',
+    estado: 'Cerrada',
+    fechaCierre: new Date('2024-11-20T23:59:59').toISOString(),
+    pdfData: null,
     pdfOriginalName: null,
-    pdfData: null
+    pdfPath: null
+  },
+  {
+    id: 3,
+    titulo: 'Licitación de Prueba PDF',
+    descripcion: 'Licitación para probar funcionalidad de PDFs',
+    estado: 'Abierta',
+    fechaCierre: new Date('2025-01-15T23:59:59').toISOString(),
+    // PDF de prueba simple (PDF mínimo válido en base64)
+    pdfData: 'JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA0IDAgUgo+Pgo+PgovQ29udGVudHMgNSAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago1IDAgb2JqCjw8Ci9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCi9GMSA0OCBUZA01MCA3NTAgVGQKKFBERiBkZSBQcnVlYmEpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjQ1IDAwMDAwIG4gCjAwMDAwMDAzMjQgMDAwMDAgbiAKdHJhaWxlcgo8PAovU2l6ZSA2Ci9Sb290IDEgMCBSCj4+CnN0YXJ0eHJlZgo0MTgKJSVFT0Y=',
+    pdfOriginalName: 'documento-prueba.pdf',
+    pdfPath: '/api/licitaciones/3/pdf'
   }
 ];
 

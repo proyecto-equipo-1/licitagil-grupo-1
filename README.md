@@ -27,19 +27,20 @@ Esta primera entrega se enfoca en establecer el **MVP (Minimum Viable Product)**
 
 ## 🎬 Video Demostración
 
-🎥 **[Ver Video de Entrega 1]([URL_DEL_VIDEO_AQUI])**
+**[Ver Video de Entrega 1]([URL_DEL_VIDEO_AQUI])**
 
-*Duración: [XX] minutos | Incluye: Demo de funcionalidades, explicación técnica y resultados de pruebas*
+
+**[Presentacion Entrega 1](https://www.canva.com/design/DAG1oRgOx4M/Jnn6sIy0O-3HwovlKxb9Yw/view?utm_content=DAG1oRgOx4M&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9ff4fbda48)**
 
 ---
 
 ## 👥 Integrantes del Equipo
 
-| Rol | Nombre | Email | GitHub |
-|-----|--------|-------|--------|
-| **Team Leader & Backend Developer** | [NOMBRE_COMPLETO_1] | [email1@ejemplo.com] | [@username1](https://github.com/username1) |
-| **Frontend Developer & Testing** | [NOMBRE_COMPLETO_2] | [email2@ejemplo.com] | [@username2](https://github.com/username2) |
-| **Full Stack Developer & DevOps** | [NOMBRE_COMPLETO_3] | [email3@ejemplo.com] | [@username3](https://github.com/username3) |
+| Rol | Nombre | Email |
+|-----|--------|-------|
+| **Team Leader & Backend Developer** | Felipe Campaña | felipe.campana@usm.cl |
+| **Frontend Developer & Testing** | Javiera Osorio | javiera.osoriom@usm.cl |
+| **Full Stack Developer & DevOps** | Bruno Flores | bruno.flores@usm.cl| 
 
 ---
 
@@ -334,17 +335,8 @@ Todas las funcionalidades están documentadas como historias de usuario en JIRA 
 ## 📞 Contacto y Soporte
 
 ### **Equipo de Desarrollo**
-- 📧 **Email del proyecto**: [email-proyecto@ejemplo.com]
-- 💬 **Slack del equipo**: [#licitagil-desarrollo]
 - 🐛 **Reportar bugs**: [GitHub Issues](https://github.com/proyecto-equipo-1/licitagil-grupo-1/issues)
 - 💡 **Sugerencias**: [GitHub Discussions](https://github.com/proyecto-equipo-1/licitagil-grupo-1/discussions)
-
-### **Enlaces Importantes**
-- 🏠 **Repositorio**: https://github.com/proyecto-equipo-1/licitagil-grupo-1
-- 📖 **Wiki**: https://github.com/proyecto-equipo-1/licitagil-grupo-1/wiki
-- 🎬 **Video Demo**: [URL_DEL_VIDEO_AQUI]
-- 📊 **JIRA**: [ENLACE_AL_PROYECTO_JIRA]
-- 🌐 **Demo en vivo**: [URL_DEMO_SI_APLICA]
 
 ---
 
@@ -357,10 +349,3 @@ MIT License - Copyright (c) 2025 Proyecto Equipo 1
 ```
 
 ---
-
-## 📈 Estadísticas del Proyecto
-
-![GitHub last commit](https://img.shields.io/github/last-commit/proyecto-equipo-1/licitagil-grupo-1)
-![GitHub issues](https://img.shields.io/github/issues/proyecto-equipo-1/licitagil-grupo-1)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/proyecto-equipo-1/licitagil-grupo-1)
-![GitHub contributors](https://img.shields.io/github/contributors/proyecto-equipo-1/licitagil-grupo-1)
