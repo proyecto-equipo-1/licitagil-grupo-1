@@ -1,0 +1,270 @@
+.licitaciones-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f7f8fc;
+  padding: 40px;
+  min-height: 100vh;
+}
+
+
+.licitaciones-header {
+  margin-bottom: 30px;
+}
+.licitaciones-header h1 {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 20px;
+}
+.tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.tabs button {
+  background: none; border: none; padding: 10px 5px; font-size: 16px;
+  cursor: pointer; color: #888; position: relative; transition: color 0.3s;
+}
+.tabs button.active {
+  color: #007bff; font-weight: 600;
+}
+.tabs button.active::after {
+  content: ''; position: absolute; bottom: -1px; left: 0;
+  width: 100%; height: 2px; background-color: #007bff;
+}
+
+
+.licitaciones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.licitacion-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.licitacion-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.licitacion-info {
+  margin-bottom: 16px;
+}
+
+.licitacion-estado {
+  font-size: 12px;
+  font-weight: 600;
+  color: #007bff;
+  background-color: #eef5ff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: inline-block;
+  margin: 0 0 12px 0;
+}
+
+.licitacion-titulo {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+  text-decoration: none;
+  display: block; 
+  margin-bottom: 12px;
+}
+.licitacion-titulo:hover {
+  text-decoration: underline;
+}
+
+.licitacion-fecha {
+  font-size: 14px;
+  color: #555;
+  margin: 0;
+}
+.licitacion-fecha strong {
+  color: #333;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 0 0 16px 0;
+}
+
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.institucion-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.delete-btn {
+  background-color: #fdeeee; color: #e53e3e; border: none; border-radius: 50%;
+  width: 32px; height: 32px; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+}
+
+.licitacion-card:hover .delete-btn {
+  opacity: 1;
+  visibility: visible;
+}
+
+.delete-btn:hover {
+  background-color: #f9caca;
+}
+
+
+.fab {
+  position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px;
+  background-color: #007bff; color: white; border: none; border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); font-size: 28px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background-color 0.3s;
+}
+.fab:hover {
+  background-color: #0056b3;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0; 
+  font-size: 16px;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pagination span {
+  font-weight: 500;
+}
+
+/* Estilos para el filtro de estado */
+.filter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 180px;
+}
+
+.filter-container label {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.estado-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.estado-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.estado-select:hover {
+  border-color: #bbb;
+}
+
+/* Estilos para la fila de filtros */
+.filters-row {
+  display: flex;
+  gap: 30px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+/* Estilos para el contenedor de búsqueda */
+.search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-width: 250px;
+}
+
+.search-container label {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  transition: border-color 0.3s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.search-input:hover {
+  border-color: #bbb;
+}
+
+/* Estilos para mensaje de no resultados */
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.no-results p {
+  font-size: 16px;
+  margin: 0;
+}
