@@ -27,7 +27,7 @@ Esta primera entrega se enfoca en establecer el **MVP (Minimum Viable Product)**
 
 ## 🎬 Video Demostración
 
-**[Ver Video de Entrega 1]([URL_DEL_VIDEO_AQUI])**
+**[Ver Video de Entrega 1](https://www.youtube.com/watch?v=MWbOBrFVEOw)**
 
 **[Ver Presentación de Entrega 1](https://www.canva.com/design/DAG1oRgOx4M/Jnn6sIy0O-3HwovlKxb9Yw/view?utm_content=DAG1oRgOx4M&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9ff4fbda48)**
 
