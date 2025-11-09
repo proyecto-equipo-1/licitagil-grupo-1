@@ -96,7 +96,86 @@ Esta primera entrega se enfoca en establecer el **MVP (Minimum Viable Product)**
 - **Docker Compose** - Orquestación de contenedores
 - **Git** con **GitFlow** - Control de versiones
 - **GitHub** - Repositorio y colaboración
+- **Jenkins** - CI/CD y automatización de pipelines
+- **Slack** - Notificaciones y colaboración del equipo
 - **JIRA** - Gestión de proyecto ([[ENLACE_A_PROYECTO_JIRA](https://proyecto-pdsfw.atlassian.net/jira/software/projects/SCRUM/boards/1?atlOrigin=eyJpIjoiODQ0NWFiNjg0MDI5NGYxNGEwOTUzZDFlMWI3YzI5MmMiLCJwIjoiaiJ9)])
+
+---
+
+## 🔄 CI/CD Pipeline con Jenkins
+
+### **Sistema de Integración Continua y Despliegue Continuo**
+
+LicitAgil implementa un pipeline completo de CI/CD utilizando **Jenkins** para automatizar el proceso de construcción, pruebas y despliegue de la aplicación.
+
+#### **🎯 Características del Pipeline**
+
+- ✅ **Integración Continua**: Validación automática de código en cada push
+- ✅ **Pruebas Automatizadas**: Ejecución de tests E2E con Cypress
+- ✅ **Construcción de Imágenes**: Docker images para API y Frontend
+- ✅ **Despliegue Automático**: Deploy a staging (develop) y producción (main)
+- ✅ **Notificaciones**: Alertas en tiempo real vía Slack
+- ✅ **Seguridad**: Escaneo de vulnerabilidades con npm audit
+- ✅ **Webhooks**: Triggers automáticos desde GitHub
+
+#### **📦 Stages del Pipeline**
+
+```
+1. Checkout          → Clonar repositorio
+2. Notify Start      → Notificación de inicio
+3. Install Deps      → Instalación de dependencias (paralelo)
+4. Lint & Check      → Verificación de tipos y código
+5. Build             → Compilación de TypeScript
+6. DB Migration      → Migraciones de base de datos
+7. Test              → Pruebas E2E con Cypress
+8. Security Scan     → Análisis de vulnerabilidades
+9. Docker Build      → Construcción de imágenes
+10. Deploy           → Despliegue a ambiente
+11. Health Check     → Verificación de servicios
+```
+
+#### **🚀 Guías de Configuración**
+
+Para configurar Jenkins en tu entorno:
+
+- 📖 **[Guía Rápida de Jenkins](./docs/JENKINS_QUICKSTART.md)** - Setup en 10 pasos
+- 📖 **[Configuración Completa de Jenkins](./docs/JENKINS_SETUP.md)** - Guía detallada
+- 📖 **[Documentación Técnica CI/CD](./docs/CI_CD_DOCUMENTATION.md)** - Arquitectura del pipeline
+
+#### **⚡ Inicio Rápido**
+
+```powershell
+# 1. Verificar requisitos
+.\scripts\check-jenkins-requirements.ps1
+
+# 2. Instalar Jenkins con Docker
+docker run -d \
+  --name jenkins \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  jenkins/jenkins:lts
+
+# 3. Acceder a Jenkins
+# http://localhost:8080
+
+# Ver documentación completa en docs/JENKINS_QUICKSTART.md
+```
+
+#### **📊 Integración con Herramientas**
+
+- **GitHub**: Webhooks para triggers automáticos
+- **Slack**: Notificaciones de build y deployment
+- **Docker**: Construcción y despliegue de contenedores
+- **PostgreSQL**: Migraciones automáticas
+
+#### **🔔 Notificaciones**
+
+El pipeline envía notificaciones a Slack en los siguientes eventos:
+- 🔄 Inicio del pipeline
+- ✅ Build exitoso con duración
+- ❌ Build fallido con link a logs
+- ⚠️ Build inestable con warnings
 
 ---
 
@@ -147,11 +226,15 @@ npm run dev                  # Iniciar aplicación: http://localhost:5173
 #### **API (.env)**
 ```env
 # Base de datos
-DATABASE_URL="postgresql://postgres:password@localhost:5432/licitagil"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/licitagil"
 
 # Servidor
 PORT=3000
 NODE_ENV=development
+
+# Seguridad
+JWT_SECRET=kZm6kJVTzDndsWQP7UOqqrbckYG5658//lHfd2rqu2c=
+CORS_ORIGIN=http://localhost:5173
 
 # Archivos
 UPLOAD_DIR=./uploads
@@ -166,6 +249,14 @@ VITE_API_URL=http://localhost:3000
 # Configuración de desarrollo
 VITE_DEV_MODE=true
 ```
+
+#### **⚠️ Producción (AWS/Docker)**
+Para desplegar en producción, configura estas variables adicionales:
+- `JWT_SECRET`: Token de autenticación (mismo valor en API)
+- `CORS_ORIGIN`: URL de tu frontend (ej: https://tu-app.amplifyapp.com)
+- `VITE_API_URL`: URL de tu API backend en producción
+
+Ver guía completa: [FIX_AWS_LOGIN.md](./docs/FIX_AWS_LOGIN.md)
 
 ---
 
