@@ -1,274 +1,190 @@
 pipeline {
-    agent any
-    
-    environment {
-        // AWS Amplify Configuration
-        AWS_REGION = 'us-east-1'
-        AMPLIFY_APP_ID = 'd386d94bix0hzl'
-        
-        // Branch-specific deployment
-        DEPLOY_ENV = "${env.BRANCH_NAME == 'main' ? 'production' : 'testing'}"
-        AMPLIFY_BRANCH = "${env.BRANCH_NAME == 'main' ? 'main' : 'testing'}"
-    }
-    
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        timeout(time: 45, unit: 'MINUTES')
-        disableConcurrentBuilds()
-    }
-    
-    stages {
+  agent none
+
+  environment {
+    AWS_REGION     = 'us-east-1'
+    AMPLIFY_APP_ID = 'd386d94bix0hzl'
+
+    // Branch → entorno en Amplify
+    DEPLOY_ENV     = "${env.BRANCH_NAME == 'main' ? 'production' : 'testing'}"
+    AMPLIFY_BRANCH = "${env.BRANCH_NAME == 'main' ? 'main' : 'testing'}"
+  }
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+    timeout(time: 45, unit: 'MINUTES')
+    disableConcurrentBuilds()
+  }
+
+  stages {
+
+    stage('Build & Test') {
+      agent {
+        docker {
+          image 'cypress/included:13.13.1'   // Node + npm + Cypress en headless
+          args '-u root'                      // permisos para instalar/leer cache si hace falta
+        }
+      }
+      stages {
         stage('Setup Environment') {
-            steps {
-                script {
-                    echo "=========================================="
-                    echo "LICITAGIL CI/CD PIPELINE"
-                    echo "=========================================="
-                    echo "Branch: ${env.BRANCH_NAME}"
-                    echo "Build: #${env.BUILD_NUMBER}"
-                    echo "Deploy Target: ${env.DEPLOY_ENV}"
-                    echo "AWS Amplify Branch: ${env.AMPLIFY_BRANCH}"
-                    echo "=========================================="
-                    
-                    sh '''
-                        echo Verificando herramientas...
-                        node --version
-                        npm --version
-                        git --version
-                    '''
-                }
-            }
+          steps {
+            sh '''
+              echo "=========================================="
+              echo "LICITAGIL CI/CD PIPELINE"
+              echo "=========================================="
+              echo "Branch: ${BRANCH_NAME}"
+              echo "Build: #${BUILD_NUMBER}"
+              echo "Deploy Target: ${DEPLOY_ENV}"
+              echo "AWS Amplify Branch: ${AMPLIFY_BRANCH}"
+              echo "=========================================="
+              echo "Node: $(node -v)"
+              echo "NPM:  $(npm -v)"
+              git --version || true
+            '''
+          }
         }
-        
+
         stage('Install Dependencies') {
-            parallel {
-                stage('API Dependencies') {
-                    steps {
-                        dir('api') {
-                            echo "Instalando dependencias de API..."
-                            sh 'npm ci --legacy-peer-deps || npm install'
-                        }
-                    }
+          parallel {
+            stage('API Deps') {
+              steps {
+                dir('api') {
+                  sh 'npm ci --legacy-peer-deps || npm install'
                 }
-                stage('Web Dependencies') {
-                    steps {
-                        dir('web') {
-                            echo "Instalando dependencias de Web..."
-                            sh 'npm ci --legacy-peer-deps || npm install'
-                        }
-                    }
-                }
+              }
             }
-        }
-        
-        stage('Build') {
-            parallel {
-                stage('Build API') {
-                    steps {
-                        dir('api') {
-                            echo "🏗️ Compilando API..."
-                            sh '''
-                                npm run build || echo "Build completed with warnings"
-                                ls -la dist/ || echo "No dist directory"
-                            '''
-                        }
-                    }
-                }
-                stage('Build Web') {
-                    steps {
-                        dir('web') {
-                            echo "🏗️ Compilando Frontend..."
-                            sh '''
-                                npm run build || echo "Build completed with warnings"
-                                ls -la dist/ || echo "No dist directory"
-                            '''
-                        }
-                    }
-                }
-            }
-        }
-        
-        stage('Tests') {
-            when {
-                anyOf {
-                    branch 'main'
-                    branch 'testing'
-                    branch 'develop'
-                }
-            }
-            steps {
+            stage('Web Deps') {
+              steps {
                 dir('web') {
-                    echo "🧪 Ejecutando tests..."
-                    sh '''
-                        # Ejecutar tests de Cypress en modo headless
-                        npm run test:e2e || echo "Tests completed with warnings"
-                    '''
+                  sh 'npm ci --legacy-peer-deps || npm install'
                 }
+              }
             }
+          }
         }
-        
+
+        stage('Build') {
+          parallel {
+            stage('Build API') {
+              steps {
+                dir('api') {
+                  sh '''
+                    npm run build || true
+                    ls -la dist || true
+                  '''
+                }
+              }
+            }
+            stage('Build Web') {
+              steps {
+                dir('web') {
+                  sh '''
+                    npm run build || true
+                    ls -la dist || true
+                  '''
+                }
+              }
+            }
+          }
+        }
+
+        stage('Tests (web)') {
+          when {
+            anyOf { branch 'main'; branch 'testing'; branch 'develop' }
+          }
+          steps {
+            dir('web') {
+              sh 'npm run test:e2e || true'
+            }
+          }
+        }
+
         stage('Security Scan') {
-            parallel {
-                stage('Scan API') {
-                    steps {
-                        dir('api') {
-                            echo "🔒 Escaneando vulnerabilidades en API..."
-                            sh 'npm audit --audit-level=high || echo "Security scan completed"'
-                        }
-                    }
-                }
-                stage('Scan Web') {
-                    steps {
-                        dir('web') {
-                            echo "🔒 Escaneando vulnerabilidades en Web..."
-                            sh 'npm audit --audit-level=high || echo "Security scan completed"'
-                        }
-                    }
-                }
+          parallel {
+            stage('Scan API') {
+              steps {
+                dir('api') { sh 'npm audit --audit-level=high || true' }
+              }
             }
+            stage('Scan Web') {
+              steps {
+                dir('web') { sh 'npm audit --audit-level=high || true' }
+              }
+            }
+          }
         }
-        
-        stage('Deploy to AWS Amplify') {
-            when {
-                anyOf {
-                    branch 'main'
-                    branch 'testing'
-                }
-            }
-            steps {
-                script {
-                    echo "=========================================="
-                    echo "🚀 DESPLEGANDO A AWS AMPLIFY"
-                    echo "=========================================="
-                    echo "Environment: ${env.DEPLOY_ENV}"
-                    echo "Branch: ${env.AMPLIFY_BRANCH}"
-                    echo "App ID: ${env.AMPLIFY_APP_ID}"
-                    echo "=========================================="
-                    
-                    withCredentials([
-                        [
-                            $class: 'AmazonWebServicesCredentialsBinding',
-                            credentialsId: 'aws-credentials',
-                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                        ]
-                    ]) {
-                        sh '''
-                            export AWS_DEFAULT_REGION=${AWS_REGION}
-                            
-                            echo "🔐 Configurando AWS CLI..."
-                            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                            aws configure set region ${AWS_REGION}
-                            
-                            echo "🔐 Configurando Amplify..."
-                            amplify configure project \
-                                --appId ${AMPLIFY_APP_ID} \
-                                --envName ${AMPLIFY_BRANCH} \
-                                --region ${AWS_REGION} \
-                                --yes || echo "Amplify already configured"
-                            
-                            echo "📦 Desplegando aplicación..."
-                            amplify publish \
-                                --yes \
-                                --codegen \
-                                || echo "Deploy completed with warnings"
-                            
-                            echo "✅ Deploy completado"
-                        '''
-                    }
-                    
-                    // URL de la aplicación desplegada
-                    def appUrl = "https://${env.AMPLIFY_BRANCH}.${env.AMPLIFY_APP_ID}.amplifyapp.com"
-                    echo "=========================================="
-                    echo "✅ DEPLOY EXITOSO"
-                    echo "URL: ${appUrl}"
-                    echo "=========================================="
-                }
-            }
+      }
+    }
+
+    stage('Deploy to AWS Amplify') {
+      when { anyOf { branch 'main'; branch 'testing' } }
+      agent {
+        docker { image 'amazon/aws-cli:2.17.39' args '-u root' }
+      }
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                          credentialsId: 'aws-credentials',
+                          accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                          secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+          sh '''
+            export AWS_DEFAULT_REGION=${AWS_REGION}
+            echo "🚀 Desplegando a Amplify (branch: ${AMPLIFY_BRANCH})"
+            aws --version
+
+            # Disparar un build en Amplify Console (el repo ya está conectado a Amplify)
+            aws amplify start-job \
+              --app-id ${AMPLIFY_APP_ID} \
+              --branch-name ${AMPLIFY_BRANCH} \
+              --job-type RELEASE
+
+            echo "✅ Job de Amplify iniciado para ${AMPLIFY_BRANCH}"
+          '''
         }
-        
-        stage('Health Check') {
-            when {
-                anyOf {
-                    branch 'main'
-                    branch 'testing'
-                }
-            }
-            steps {
-                script {
-                    echo "🏥 Verificando salud de la aplicación..."
-                    
-                    def appUrl = "https://${env.AMPLIFY_BRANCH}.${env.AMPLIFY_APP_ID}.amplifyapp.com"
-                    
-                    retry(3) {
-                        sh """
-                            sleep 10
-                            curl -f ${appUrl} || echo "Health check: App is warming up"
-                        """
-                    }
-                    
-                    echo "✅ Health check completado"
-                }
-            }
+      }
+    }
+
+    stage('Health Check') {
+      when { anyOf { branch 'main'; branch 'testing' } }
+      agent { docker { image 'curlimages/curl:8.10.1' } }
+      steps {
+        script {
+          def appUrl = "https://${env.AMPLIFY_BRANCH}.${env.AMPLIFY_APP_ID}.amplifyapp.com"
+          echo "🏥 Healthcheck: ${appUrl}"
+          retry(3) {
+            sh "sleep 10 && curl -f ${appUrl} || true"
+          }
         }
-        
-        stage('Deployment Summary') {
-            steps {
-                script {
-                    def appUrl = "https://${env.AMPLIFY_BRANCH}.${env.AMPLIFY_APP_ID}.amplifyapp.com"
-                    
-                    echo """
+      }
+    }
+
+    stage('Deployment Summary') {
+      steps {
+        script {
+          def appUrl = "https://${env.AMPLIFY_BRANCH}.${env.AMPLIFY_APP_ID}.amplifyapp.com"
+          echo """
 ========================================
-🎉 PIPELINE COMPLETADO EXITOSAMENTE
+🎉 PIPELINE COMPLETADO
 ========================================
 Build: #${env.BUILD_NUMBER}
 Branch: ${env.BRANCH_NAME}
 Environment: ${env.DEPLOY_ENV}
 
-📱 URLs de la Aplicación:
+📱 URLs:
 Frontend: ${appUrl}
 API: https://mqru1bnmg2.execute-api.us-east-1.amazonaws.com/dev
-
-📊 Stages Ejecutados:
-✅ Setup Environment
-✅ Install Dependencies
-✅ Build (API + Web)
-✅ Tests
-✅ Security Scan
-✅ Deploy to AWS Amplify
-✅ Health Check
-
 ========================================
-                    """
-                }
-            }
+          """
         }
+      }
     }
-    
-    post {
-        success {
-            echo "=========================================="
-            echo "✅ PIPELINE EXITOSO"
-            echo "=========================================="
-            echo "Build: #${env.BUILD_NUMBER}"
-            echo "Branch: ${env.BRANCH_NAME}"
-            echo "Duration: ${currentBuild.durationString}"
-            echo "=========================================="
-        }
-        
-        failure {
-            echo "=========================================="
-            echo "❌ PIPELINE FALLÓ"
-            echo "=========================================="
-            echo "Build: #${env.BUILD_NUMBER}"
-            echo "Branch: ${env.BRANCH_NAME}"
-            echo "Ver logs: ${env.BUILD_URL}console"
-            echo "=========================================="
-        }
-        
-        always {
-            echo "🧹 Limpieza completada"
-        }
+  }
+
+  post {
+    always  { echo "🧹 Limpieza completada" }
+    success { echo "✅ PIPELINE EXITOSO" }
+    failure {
+      echo "❌ PIPELINE FALLÓ"
+      echo "Ver logs: ${env.BUILD_URL}console"
     }
+  }
 }
