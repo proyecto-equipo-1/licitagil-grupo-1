@@ -2,6 +2,7 @@
 
 // Importar comandos personalizados para LicitAgil
 import './licitaciones-commands'
+import './auth-commands'
 
 // ***********************************************
 // Comandos personalizados para LicitAgil

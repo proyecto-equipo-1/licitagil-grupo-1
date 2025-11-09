@@ -36,8 +36,12 @@ export default defineConfig({
     },
     
     env: {
+      // 🔐 Variables de autenticación
+      apiUrl: 'http://localhost:3000',
+      testUserEmail: 'cypress-test@ejemplo.com',
+      testUserPassword: 'CypressTest123!',
+      testUserName: 'Cypress Test User',
       // Variables de entorno para pruebas
-      apiUrl: 'http://localhost:3000/api',
       testTimeout: 30000
     },
     

@@ -55,11 +55,17 @@ export default function NewPage() {
         formData.append('titulo', form.titulo);
         formData.append('descripcion', form.descripcion);
         formData.append('estado', form.estado);
-        formData.append('fechaCierre', form.fecha_cierre);
+        formData.append('fecha_cierre', form.fecha_cierre); // ✅ Usar snake_case como espera el backend
         formData.append('pdf', pdfInputRef.current.files[0]);
+        
+        // Obtener token de localStorage
+        const token = localStorage.getItem('token');
         
         const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones`, {
           method: 'POST',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: formData
         });
         
@@ -75,7 +81,7 @@ export default function NewPage() {
           titulo: form.titulo,
           descripcion: form.descripcion,
           estado: form.estado,
-          fechaCierre: form.fecha_cierre
+          fecha_cierre: form.fecha_cierre // ✅ Usar snake_case como espera el backend
         };
         
         const lic = await fetchJSON('/api/licitaciones', {
