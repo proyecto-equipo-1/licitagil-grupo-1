@@ -6,9 +6,10 @@ pipeline {
         NODE_VERSION = '20'
         DOCKER_REGISTRY = 'docker.io'
         IMAGE_NAME = 'licitagil'
-        DATABASE_URL = credentials('DATABASE_URL')
+        // Credenciales comentadas temporalmente - configurar en Jenkins primero
+        // DATABASE_URL = credentials('DATABASE_URL')
+        // SLACK_CREDENTIALS = credentials('slack-webhook')
         SLACK_CHANNEL = '#licitagil-notifications'
-        SLACK_CREDENTIALS = credentials('slack-webhook')
     }
     
     // Comentado temporalmente - instalar NodeJS Plugin primero
@@ -41,7 +42,10 @@ pipeline {
         stage('Notify Start') {
             steps {
                 script {
-                    notifySlack('STARTED')
+                    echo "🔄 Pipeline Iniciado"
+                    echo "Branch: ${env.BRANCH_NAME}"
+                    echo "Build: #${env.BUILD_NUMBER}"
+                    // notifySlack('STARTED') // Descomentar cuando Slack esté configurado
                 }
             }
         }
@@ -302,7 +306,7 @@ pipeline {
         success {
             script {
                 echo "✅ Pipeline ejecutado exitosamente!"
-                notifySlack('SUCCESS')
+                // notifySlack('SUCCESS') // Descomentar cuando Slack esté configurado
                 
                 // Archivar artefactos
                 archiveArtifacts artifacts: '**/dist/**', allowEmptyArchive: true
@@ -313,65 +317,48 @@ pipeline {
         failure {
             script {
                 echo "❌ Pipeline falló!"
-                notifySlack('FAILURE')
+                // notifySlack('FAILURE') // Descomentar cuando Slack esté configurado
             }
         }
         
         unstable {
             script {
                 echo "⚠️ Pipeline inestable!"
-                notifySlack('UNSTABLE')
+                // notifySlack('UNSTABLE') // Descomentar cuando Slack esté configurado
             }
         }
         
         always {
-            script {
-                echo "🧹 Limpiando recursos..."
-                
-                // Limpiar contenedores y volúmenes
-                sh '''
-                    docker-compose down -v || true
-                    docker system prune -f || true
-                '''
-                
-                // Publicar resultados de pruebas si existen
-                junit testResults: '**/cypress/results/*.xml', allowEmptyResults: true
-                
-                // Publicar reportes de Cypress
-                publishHTML([
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'web/cypress/reports',
-                    reportFiles: 'index.html',
-                    reportName: 'Cypress Test Report'
-                ])
-            }
+            echo "🧹 Pipeline completado"
+            echo "Build: #${env.BUILD_NUMBER}"
+            echo "Branch: ${env.BRANCH_NAME}"
         }
         
         cleanup {
-            cleanWs()
+            echo "✅ Limpieza finalizada"
         }
     }
 }
 
-// Función para notificaciones de Slack
+// Función para notificaciones de Slack (requiere Slack Notification Plugin)
 def notifySlack(String status) {
+    // Comentado hasta que se instale el plugin y se configuren las credenciales
+    /*
     def color = ''
     def message = ''
     
     switch(status) {
         case 'STARTED':
             color = '#0000FF'
-            message = "🔄 *Pipeline Iniciado*\n*Branch:* ${env.BRANCH_NAME}\n*Commit:* ${env.GIT_COMMIT_MSG}\n*Autor:* ${env.GIT_AUTHOR}"
+            message = "🔄 *Pipeline Iniciado*\n*Branch:* ${env.BRANCH_NAME}\n*Build:* #${env.BUILD_NUMBER}"
             break
         case 'SUCCESS':
             color = 'good'
-            message = "✅ *Pipeline Exitoso*\n*Branch:* ${env.BRANCH_NAME}\n*Build:* #${env.BUILD_NUMBER}\n*Duración:* ${currentBuild.durationString}"
+            message = "✅ *Pipeline Exitoso*\n*Branch:* ${env.BRANCH_NAME}\n*Build:* #${env.BUILD_NUMBER}"
             break
         case 'FAILURE':
             color = 'danger'
-            message = "❌ *Pipeline Falló*\n*Branch:* ${env.BRANCH_NAME}\n*Build:* #${env.BUILD_NUMBER}\n*Ver logs:* ${env.BUILD_URL}"
+            message = "❌ *Pipeline Falló*\n*Branch:* ${env.BRANCH_NAME}\n*Build:* #${env.BUILD_NUMBER}"
             break
         case 'UNSTABLE':
             color = 'warning'
@@ -379,11 +366,11 @@ def notifySlack(String status) {
             break
     }
     
-    // Enviar notificación a Slack
     slackSend(
         channel: env.SLACK_CHANNEL,
         color: color,
         message: message,
         tokenCredentialId: 'slack-webhook'
     )
+    */
 }
