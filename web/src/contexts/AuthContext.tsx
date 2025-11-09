@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+
 interface User {
   id: number;
   email: string;
@@ -31,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (storedToken) {
         try {
-          const response = await fetch('http://localhost:3000/api/auth/user', {
+          const response = await fetch(`${API_URL}/api/auth/user`, {
             headers: {
               'Authorization': `Bearer ${storedToken}`
             }

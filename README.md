@@ -226,11 +226,15 @@ npm run dev                  # Iniciar aplicación: http://localhost:5173
 #### **API (.env)**
 ```env
 # Base de datos
-DATABASE_URL="postgresql://postgres:password@localhost:5432/licitagil"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/licitagil"
 
 # Servidor
 PORT=3000
 NODE_ENV=development
+
+# Seguridad
+JWT_SECRET=kZm6kJVTzDndsWQP7UOqqrbckYG5658//lHfd2rqu2c=
+CORS_ORIGIN=http://localhost:5173
 
 # Archivos
 UPLOAD_DIR=./uploads
@@ -245,6 +249,14 @@ VITE_API_URL=http://localhost:3000
 # Configuración de desarrollo
 VITE_DEV_MODE=true
 ```
+
+#### **⚠️ Producción (AWS/Docker)**
+Para desplegar en producción, configura estas variables adicionales:
+- `JWT_SECRET`: Token de autenticación (mismo valor en API)
+- `CORS_ORIGIN`: URL de tu frontend (ej: https://tu-app.amplifyapp.com)
+- `VITE_API_URL`: URL de tu API backend en producción
+
+Ver guía completa: [FIX_AWS_LOGIN.md](./docs/FIX_AWS_LOGIN.md)
 
 ---
 

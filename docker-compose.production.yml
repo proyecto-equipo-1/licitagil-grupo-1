@@ -11,8 +11,9 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://licitagil_user:secure_password@db:5432/licitagil_prod
-      - JWT_SECRET=your-super-secure-jwt-secret-change-this
+      - JWT_SECRET=kZm6kJVTzDndsWQP7UOqqrbckYG5658//lHfd2rqu2c=
       - PORT=3000
+      - CORS_ORIGIN=https://main.d3fqxqxqxqxqxq.amplifyapp.com
     depends_on:
       - db
     volumes:
