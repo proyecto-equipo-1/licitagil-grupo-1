@@ -30,7 +30,7 @@ pipeline {
                     echo "AWS Amplify Branch: ${env.AMPLIFY_BRANCH}"
                     echo "=========================================="
                     
-                    bat '''
+                    sh '''
                         echo Verificando herramientas...
                         node --version
                         npm --version
@@ -46,7 +46,7 @@ pipeline {
                     steps {
                         dir('api') {
                             echo "Instalando dependencias de API..."
-                            bat 'npm ci --legacy-peer-deps || npm install'
+                            sh 'npm ci --legacy-peer-deps || npm install'
                         }
                     }
                 }
@@ -54,7 +54,7 @@ pipeline {
                     steps {
                         dir('web') {
                             echo "Instalando dependencias de Web..."
-                            bat 'npm ci --legacy-peer-deps || npm install'
+                            sh 'npm ci --legacy-peer-deps || npm install'
                         }
                     }
                 }
@@ -67,9 +67,9 @@ pipeline {
                     steps {
                         dir('api') {
                             echo "🏗️ Compilando API..."
-                            bat '''
+                            sh '''
                                 npm run build || echo "Build completed with warnings"
-                                dir -la dist/ || echo "No dist directory"
+                                ls -la dist/ || echo "No dist directory"
                             '''
                         }
                     }
@@ -78,9 +78,9 @@ pipeline {
                     steps {
                         dir('web') {
                             echo "🏗️ Compilando Frontend..."
-                            bat '''
+                            sh '''
                                 npm run build || echo "Build completed with warnings"
-                                dir -la dist/ || echo "No dist directory"
+                                ls -la dist/ || echo "No dist directory"
                             '''
                         }
                     }
@@ -99,7 +99,7 @@ pipeline {
             steps {
                 dir('web') {
                     echo "🧪 Ejecutando tests..."
-                    bat '''
+                    sh '''
                         # Ejecutar tests de Cypress en modo headless
                         npm run test:e2e || echo "Tests completed with warnings"
                     '''
@@ -113,7 +113,7 @@ pipeline {
                     steps {
                         dir('api') {
                             echo "🔒 Escaneando vulnerabilidades en API..."
-                            bat 'npm audit --audit-level=high || echo "Security scan completed"'
+                            sh 'npm audit --audit-level=high || echo "Security scan completed"'
                         }
                     }
                 }
@@ -121,7 +121,7 @@ pipeline {
                     steps {
                         dir('web') {
                             echo "🔒 Escaneando vulnerabilidades en Web..."
-                            bat 'npm audit --audit-level=high || echo "Security scan completed"'
+                            sh 'npm audit --audit-level=high || echo "Security scan completed"'
                         }
                     }
                 }
@@ -153,7 +153,7 @@ pipeline {
                             secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                         ]
                     ]) {
-                        bat '''
+                        sh '''
                             export AWS_DEFAULT_REGION=${AWS_REGION}
                             
                             echo "🔐 Configurando AWS CLI..."
