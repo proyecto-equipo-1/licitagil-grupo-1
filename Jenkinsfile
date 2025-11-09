@@ -1,10 +1,6 @@
 pipeline {
     agent any
     
-    tools {
-        nodejs 'NodeJS 20'
-    }
-    
     environment {
         // AWS Amplify Configuration
         AWS_REGION = 'us-east-1'
