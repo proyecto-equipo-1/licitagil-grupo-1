@@ -11,9 +11,10 @@ pipeline {
         SLACK_CREDENTIALS = credentials('slack-webhook')
     }
     
-    tools {
-        nodejs "${NODE_VERSION}"
-    }
+    // Comentado temporalmente - instalar NodeJS Plugin primero
+    // tools {
+    //     nodejs "${NODE_VERSION}"
+    // }
     
     options {
         // Mantener los últimos 10 builds
@@ -172,22 +173,20 @@ pipeline {
         }
         
         stage('Security Scan') {
-            steps {
-                parallel {
-                    stage('Scan API Dependencies') {
-                        steps {
-                            dir('api') {
-                                echo "🔒 Escaneando vulnerabilidades en API..."
-                                sh 'npm audit --audit-level=moderate || true'
-                            }
+            parallel {
+                stage('Scan API Dependencies') {
+                    steps {
+                        dir('api') {
+                            echo "🔒 Escaneando vulnerabilidades en API..."
+                            sh 'npm audit --audit-level=moderate || true'
                         }
                     }
-                    stage('Scan Web Dependencies') {
-                        steps {
-                            dir('web') {
-                                echo "🔒 Escaneando vulnerabilidades en Web..."
-                                sh 'npm audit --audit-level=moderate || true'
-                            }
+                }
+                stage('Scan Web Dependencies') {
+                    steps {
+                        dir('web') {
+                            echo "🔒 Escaneando vulnerabilidades en Web..."
+                            sh 'npm audit --audit-level=moderate || true'
                         }
                     }
                 }
