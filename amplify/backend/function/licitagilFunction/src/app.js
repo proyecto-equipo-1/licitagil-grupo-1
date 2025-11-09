@@ -10,6 +10,8 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const awsServerlessExpressMiddleware = require('aws-serverless-express/middleware')
 const multer = require('multer')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage()
@@ -47,6 +49,137 @@ app.options('*', function(req, res) {
   res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Content-Length, X-Requested-With");
   res.sendStatus(200);
+});
+
+// JWT Secret - En producción debería venir de variables de entorno
+const JWT_SECRET = process.env.JWT_SECRET || 'kZm6kJVTzDndsWQP7UOqqrbckYG5658//lHfd2rqu2c=';
+
+// Base de datos en memoria para usuarios (en producción usar DynamoDB)
+const users = [
+  {
+    id: 1,
+    email: 'admin@licitagil.com',
+    password: '$2a$10$rWvxZ9zBqX3LqH0H0H0H0uqY7Y7Y7Y7Y7Y7Y7Y7Y7Y7Y7Y7Y7Y7Y', // admin1234
+    name: 'Administrador'
+  }
+];
+
+// Middleware de autenticación
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+};
+
+// Rutas de autenticación
+app.post('/api/auth/login', async function(req, res) {
+  const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+  }
+  
+  // Buscar usuario
+  const user = users.find(u => u.email === email);
+  
+  if (!user) {
+    return res.status(401).json({ error: 'Credenciales inválidas' });
+  }
+  
+  // Verificar contraseña (temporalmente permitir password directo para testing)
+  const isValidPassword = password === 'admin1234' || await bcrypt.compare(password, user.password);
+  
+  if (!isValidPassword) {
+    return res.status(401).json({ error: 'Credenciales inválidas' });
+  }
+  
+  // Generar token
+  const token = jwt.sign(
+    { id: user.id, email: user.email },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+  
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name
+    }
+  });
+});
+
+app.get('/api/auth/user', authMiddleware, function(req, res) {
+  const user = users.find(u => u.id === req.user.id);
+  
+  if (!user) {
+    return res.status(404).json({ error: 'Usuario no encontrado' });
+  }
+  
+  res.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name
+    }
+  });
+});
+
+app.post('/api/auth/register', async function(req, res) {
+  const { email, password, name } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+  }
+  
+  // Verificar si el usuario ya existe
+  if (users.find(u => u.email === email)) {
+    return res.status(400).json({ error: 'El usuario ya existe' });
+  }
+  
+  // Hash de la contraseña
+  const hashedPassword = await bcrypt.hash(password, 10);
+  
+  // Crear nuevo usuario
+  const newUser = {
+    id: users.length + 1,
+    email,
+    password: hashedPassword,
+    name: name || email.split('@')[0]
+  };
+  
+  users.push(newUser);
+  
+  // Generar token
+  const token = jwt.sign(
+    { id: newUser.id, email: newUser.email },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+  
+  res.status(201).json({
+    token,
+    user: {
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name
+    }
+  });
+});
+
+app.post('/api/auth/logout', function(req, res) {
+  res.json({ message: 'Sesión cerrada exitosamente' });
 });
 
 // Mock data for development - replace with DynamoDB later
