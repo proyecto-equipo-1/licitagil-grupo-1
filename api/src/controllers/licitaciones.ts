@@ -1,6 +1,6 @@
 import { prisma } from '../db/prisma.js';
 import { licitacionCreateSchema, licitacionUpdateSchema } from '../schemas/licitacion.js';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { Rol, EstadoLicitacion } from '@prisma/client';
 import fs from 'fs';
