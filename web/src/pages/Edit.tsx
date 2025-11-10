@@ -185,15 +185,31 @@ export default function EditPage() {
 
       <div className="form-group">
         <label htmlFor="pdf">Subir nuevo PDF (reemplaza al actual, máx. 2MB)</label>
+        
+        {/* Botón de descarga de plantilla */}
+        <div style={{ marginBottom: '12px' }}>
+          <a 
+            href={`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/plantilla/descargar`}
+            className="btn btn-secondary"
+            download
+          >
+            📥 Descargar Plantilla Oficial (PDF)
+          </a>
+        </div>
+
         <input type="file" id="pdf" name="pdf" accept="application/pdf" ref={pdfInputRef} />
         <small style={{color: '#666', fontSize: '0.9em'}}>
-          Solo archivos PDF. Tamaño máximo: 2MB
+          Solo archivos PDF. Tamaño máximo: 2MB. El sistema validará automáticamente los requisitos mínimos.
         </small>
       </div>
 
       <div className="form-actions">
-        <Link to="/" className="btn btn-secondary">Cancelar</Link>
-        <button type="submit" className="btn btn-primary">Guardar Cambios</button>
+        <Link to="/" className="btn btn-secondary">
+          ← Cancelar
+        </Link>
+        <button type="submit" className="btn btn-primary">
+          💾 Guardar Cambios
+        </button>
       </div>
     </form>
   );

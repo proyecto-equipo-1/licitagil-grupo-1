@@ -17,18 +17,28 @@ model User {
 }
 
 model Licitacion {
-  id             Int      @id @default(autoincrement())
-  titulo         String
-  descripcion    String
-  estado         Estado
-  fechaCreacion  DateTime @default(now())
-  fechaCierre    DateTime
-  pdfPath        String?   // Ruta del PDF subido
-  pdfOriginalName String?  // Nombre original del archivo subido
+  id                 Int               @id @default(autoincrement())
+  titulo             String
+  descripcion        String
+  estado             Estado
+  fechaCreacion      DateTime          @default(now())
+  fechaCierre        DateTime
+  pdfPath            String?           // Ruta del PDF subido
+  pdfOriginalName    String?           // Nombre original del archivo subido
+  estadoValidacion   EstadoValidacion  @default(Borrador)
+  seccionesFaltantes String[]          @default([])  // Array de secciones faltantes
+  fechaValidacion    DateTime?         // Cuándo se validó el PDF
+  mensajeValidacion  String?           // Mensaje detallado de la validación
 }
 
 enum Estado {
   Abierta
   En_revision
   Cerrada
+}
+
+enum EstadoValidacion {
+  Borrador      // Sin PDF o no validado
+  Incompleta    // PDF cargado pero faltan secciones
+  Completa      // Todas las secciones presentes
 }
