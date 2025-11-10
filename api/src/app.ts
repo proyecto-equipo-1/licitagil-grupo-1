@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import licitacionesRouter from './routes/licitaciones.js';
 import authRouter from './routes/auth.js';
 import path from 'path';
+import { prisma } from './db/prisma.js';
 
 const app = express();
 
@@ -45,6 +46,53 @@ app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
+
+// Endpoint de debug (TEMPORAL - remover en producción)
+app.get('/api/debug/config', (_req, res) => {
+  const dbUrl = process.env.DATABASE_URL || 'not set';
+  const dbUrlMasked = dbUrl.replace(/:[^:@]+@/, ':****@'); // Ocultar password
+  
+  res.json({
+    env: process.env.NODE_ENV,
+    databaseUrl: dbUrlMasked,
+    cwd: process.cwd(),
+    port: process.env.PORT,
+    corsOrigin: process.env.CORS_ORIGIN,
+  });
+});
+
+app.get('/api/debug/db-stats', async (_req, res) => {
+  try {
+    const [userCount, licitacionCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.licitacion.count(),
+    ]);
+    
+    const recentLicitaciones = await prisma.licitacion.findMany({
+      orderBy: { id: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        titulo: true,
+        estado: true,
+        estadoValidacion: true,
+        pdfPath: true,
+        fechaCreacion: true,
+      }
+    });
+    
+    res.json({
+      stats: {
+        users: userCount,
+        licitaciones: licitacionCount,
+      },
+      recentLicitaciones,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.use('/api/auth', authRouter);
 app.use('/api/licitaciones', licitacionesRouter);
 
