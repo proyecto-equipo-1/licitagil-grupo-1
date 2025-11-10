@@ -6,13 +6,14 @@ import * as aprobacionesController from '../controllers/aprobaciones.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireRole, verificarDepartamentoLicitacion } from '../middleware/roles.js';
 import { Rol } from '@prisma/client';
+import { getUploadsPath } from '../utils/paths.js';
 
 const router = Router();
 
 // Configuración de multer para subida de PDFs
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(process.cwd(), 'uploads'));
+    cb(null, getUploadsPath());
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -45,6 +46,15 @@ router.post('/',
   upload.single('pdf'), 
   licitacionesController.create
 );
+
+// Revalidar PDF de licitación existente (nueva desde testing)
+router.post('/:id/revalidar',
+  verificarDepartamentoLicitacion,
+  licitacionesController.revalidarPdf
+);
+
+// Descargar plantilla de licitación (nueva desde testing - no requiere auth especial)
+router.get('/plantilla/descargar', licitacionesController.descargarPlantilla);
 
 // Editar licitación (valida acceso por departamento)
 router.put('/:id', 
