@@ -4,8 +4,8 @@ backend:
     preBuild:
       commands:
         - echo "=== Backend preBuild Phase ==="
-        - echo "Current directory:" && pwd
-        - echo "Listing directories:" && ls -la
+        - pwd
+        - ls -la
         - echo "Installing backend dependencies..."
         - cd api && npm ci
         - echo "Generating Prisma Client..."
@@ -15,12 +15,12 @@ backend:
         - echo "=== Backend Build Phase ==="
         - echo "Building backend..."
         - cd api && npm run build
-        - echo "Running database migrations (if DATABASE_URL is set)..."
-        - cd api && ([ -n "$DATABASE_URL" ] && npx prisma migrate deploy || echo "Skipping migrations: DATABASE_URL not set")
+        - echo "Running database migrations if DATABASE_URL is set..."
+        - 'cd api && ([ -n "$DATABASE_URL" ] && npx prisma migrate deploy || echo "Skipping migrations")'
         - echo "Creating templates directory..."
         - cd api && mkdir -p dist/templates
         - echo "Copying template PDFs..."
-        - cd api && (cp templates/*.pdf dist/templates/ || echo "No template PDFs found")
+        - cd api && (cp templates/*.pdf dist/templates/ || echo "No PDFs found")
     post_build:
       commands:
         - echo "Backend build complete"
@@ -34,9 +34,9 @@ frontend:
     preBuild:
       commands:
         - echo "=== Frontend preBuild Phase ==="
-        - echo "Current directory:" && pwd
-        - echo "Listing directories:" && ls -la
-        - echo "Checking if web/ exists..." && test -d web && echo "web/ found!" || echo "web/ NOT found!"
+        - pwd
+        - ls -la
+        - test -d web && echo "web directory found" || echo "web directory NOT found"
         - echo "Installing frontend dependencies..."
         - cd web && npm ci
         - echo "Installing AWS Amplify..."
