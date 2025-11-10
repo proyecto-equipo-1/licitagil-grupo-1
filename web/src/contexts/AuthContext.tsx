@@ -6,6 +6,13 @@ interface User {
   id: number;
   email: string;
   name?: string;
+  rol?: 'Administrador' | 'Adquisiciones' | 'Supervisor' | 'Funcionario' | 'Postulante';
+  departamentoId?: number | null;
+  departamento?: {
+    id: number;
+    nombre: string;
+    codigo: string;
+  } | null;
 }
 
 interface AuthContextType {

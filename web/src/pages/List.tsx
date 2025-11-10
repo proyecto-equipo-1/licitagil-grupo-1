@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchJSON } from '../services/api';
 import '../styles/EventList.css';
+import '../styles/badges.css';
 
 type Licitacion = {
   id: number;
@@ -18,11 +19,20 @@ const formatearFechaCierre = (fechaString: string) => {
 
 const formatearEstado = (estado: string) => {
   const estadosFormateados: { [key: string]: string } = {
+    'Borrador': 'Borrador',
+    'PendienteAprobacion': 'Pendiente Aprobación',
+    'Aprobada': 'Aprobada',
     'Abierta': 'Abierta',
     'En_revision': 'En revisión',
-    'Cerrada': 'Cerrada'
+    'Cerrada': 'Cerrada',
+    'Rechazada': 'Rechazada'
   };
   return estadosFormateados[estado] || estado;
+};
+
+const getEstadoBadgeClass = (estado: string) => {
+  const claseEstado = estado.toLowerCase().replace('_', '');
+  return `badge badge-${claseEstado}`;
 };
 
 export default function ListaLicitaciones() {
@@ -91,9 +101,13 @@ export default function ListaLicitaciones() {
               className="estado-select"
             >
               <option value="Todas">Todas</option>
+              <option value="Borrador">Borrador</option>
+              <option value="PendienteAprobacion">Pendiente Aprobación</option>
+              <option value="Aprobada">Aprobada</option>
               <option value="Abierta">Abierta</option>
               <option value="En_revision">En revisión</option>
               <option value="Cerrada">Cerrada</option>
+              <option value="Rechazada">Rechazada</option>
             </select>
           </div>
         </div>
@@ -114,7 +128,9 @@ export default function ListaLicitaciones() {
             {licitaciones.map((licitacion) => (
               <div key={licitacion.id} className="licitacion-card">
                 <div className="licitacion-info">
-                  <p className="licitacion-estado">{formatearEstado(licitacion.estado)}</p>
+                  <span className={getEstadoBadgeClass(licitacion.estado)}>
+                    {formatearEstado(licitacion.estado)}
+                  </span>
                   <Link to={`/licitaciones/${licitacion.id}`} className="licitacion-titulo">
                     {licitacion.titulo}
                   </Link>

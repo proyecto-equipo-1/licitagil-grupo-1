@@ -3,6 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import licitacionesRouter from './routes/licitaciones.js';
 import authRouter from './routes/auth.js';
+import departamentosRouter from './routes/departamentos.js';
 import path from 'path';
 
 const app = express();
@@ -17,7 +18,7 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     // Permitir requests sin origin (como Postman o curl)
     if (!origin) return callback(null, true);
     
@@ -47,5 +48,6 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/licitaciones', licitacionesRouter);
+app.use('/api/departamentos', departamentosRouter);
 
 export default app;
