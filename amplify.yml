@@ -8,12 +8,12 @@ backend:
         - npm ci
         - echo "Generating Prisma Client..."
         - npx prisma generate
-        - echo "Running database migrations..."
-        - npx prisma migrate deploy
     build:
       commands:
         - echo "Building backend..."
         - npm run build
+        - echo "Running database migrations (if DATABASE_URL is set)..."
+        - '[ -n "$DATABASE_URL" ] && npx prisma migrate deploy || echo "Skipping migrations: DATABASE_URL not set"'
         - echo "Creating templates directory..."
         - mkdir -p dist/templates
         - echo "Copying template PDFs..."
