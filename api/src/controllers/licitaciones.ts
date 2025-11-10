@@ -3,6 +3,7 @@ import { licitacionCreateSchema, licitacionUpdateSchema } from '../schemas/licit
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { validarRequisitosMinimos, determinarEstadoValidacion } from '../utils/pdfValidator.js';
 
 export async function list(req: Request, res: Response) {
   const page = Number(req.query.page) || 1;
@@ -70,9 +71,42 @@ export async function getPdf(req: Request, res: Response) {
 export async function create(req: Request, res: Response) {
   // Si viene un archivo PDF, guardar la ruta
   let pdfPath: string | undefined = undefined;
+  let estadoValidacion: 'Borrador' | 'Incompleta' | 'Completa' = 'Borrador';
+  let seccionesFaltantes: string[] = [];
+  let mensajeValidacion: string | undefined = undefined;
+  let fechaValidacion: Date | undefined = undefined;
+
   if (req.file) {
     pdfPath = `/uploads/${req.file.filename}`;
+    
+    // Validar el PDF automáticamente
+    try {
+      const rutaCompletaPdf = path.join(process.cwd(), 'uploads', req.file.filename);
+      const resultadoValidacion = await validarRequisitosMinimos(rutaCompletaPdf);
+      
+      estadoValidacion = determinarEstadoValidacion(resultadoValidacion);
+      seccionesFaltantes = resultadoValidacion.seccionesFaltantes;
+      mensajeValidacion = resultadoValidacion.mensaje;
+      fechaValidacion = new Date();
+
+      console.log('📋 Validación de PDF:', {
+        archivo: req.file.originalname,
+        estado: estadoValidacion,
+        seccionesFaltantes,
+        mensaje: mensajeValidacion
+      });
+    } catch (error) {
+      console.error('❌ Error al validar PDF:', error);
+      // Si falla la validación, marcar como borrador con todas las secciones faltantes
+      estadoValidacion = 'Borrador';
+      seccionesFaltantes = ['Portada', 'Objetivo y Alcance', 'Requisitos Técnicos', 'Criterios de Evaluación'];
+      mensajeValidacion = 'Error al procesar el archivo PDF';
+      fechaValidacion = new Date();
+      
+      console.log('⚠️ PDF marcado como Borrador por error en el procesamiento');
+    }
   }
+
   // Si el frontend envía datos como form-data, los campos pueden venir como strings
   const body = req.body;
   // Convertir fecha_cierre a Date si es string
@@ -92,7 +126,11 @@ export async function create(req: Request, res: Response) {
       estado,
       fechaCierre: new Date(fecha_cierre),
       pdfPath,
-      pdfOriginalName: req.file ? req.file.originalname : undefined
+      pdfOriginalName: req.file ? req.file.originalname : undefined,
+      estadoValidacion,
+      seccionesFaltantes,
+      mensajeValidacion,
+      fechaValidacion
     }
   });
   res.status(201).json(lic);
@@ -128,12 +166,39 @@ export async function update(req: Request, res: Response) {
       }
       data.pdfPath = `/uploads/${req.file.filename}`;
       data.pdfOriginalName = req.file.originalname;
+
+      // Validar el nuevo PDF automáticamente
+      try {
+        const rutaCompletaPdf = path.join(process.cwd(), 'uploads', req.file.filename);
+        const resultadoValidacion = await validarRequisitosMinimos(rutaCompletaPdf);
+        
+        data.estadoValidacion = determinarEstadoValidacion(resultadoValidacion);
+        data.seccionesFaltantes = resultadoValidacion.seccionesFaltantes;
+        data.mensajeValidacion = resultadoValidacion.mensaje;
+        data.fechaValidacion = new Date();
+
+        console.log('📋 Re-validación de PDF:', {
+          id,
+          archivo: req.file.originalname,
+          estado: data.estadoValidacion,
+          seccionesFaltantes: data.seccionesFaltantes
+        });
+      } catch (error) {
+        console.error('Error al validar PDF en actualización:', error);
+        data.estadoValidacion = 'Incompleta';
+        data.mensajeValidacion = 'No se pudo validar el PDF automáticamente';
+      }
     } else if (removePdf && existing.pdfPath) {
       // eliminar archivo existente y poner pdfPath a null
       const oldPath = path.join(process.cwd(), existing.pdfPath.replace(/^\//, ''));
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       data.pdfPath = null;
       data.pdfOriginalName = null;
+      // Resetear validación al eliminar PDF
+      data.estadoValidacion = 'Borrador';
+      data.seccionesFaltantes = [];
+      data.mensajeValidacion = null;
+      data.fechaValidacion = null;
     }
 
     const lic = await prisma.licitacion.update({ where: { id }, data });
@@ -147,9 +212,87 @@ export async function update(req: Request, res: Response) {
 export async function remove(req: Request, res: Response) {
   const id = Number(req.params.id);
   try {
+    const lic = await prisma.licitacion.findUnique({ where: { id } });
+    if (lic && lic.pdfPath) {
+      const filePath = path.join(process.cwd(), lic.pdfPath.replace(/^\//, ''));
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
     await prisma.licitacion.delete({ where: { id } });
     res.json({ ok: true });
   } catch (e) {
     res.status(404).json({ error: 'No encontrada' });
+  }
+}
+
+/**
+ * Descarga la plantilla oficial de licitación
+ */
+export async function descargarPlantilla(req: Request, res: Response) {
+  try {
+    const plantillaPath = path.join(process.cwd(), 'templates', 'Plantilla_Licitacion_Oficial.pdf');
+    
+    if (!fs.existsSync(plantillaPath)) {
+      return res.status(404).json({ error: 'Plantilla no encontrada' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="Plantilla_Licitacion_LicitAgil.pdf"');
+    
+    const stream = fs.createReadStream(plantillaPath);
+    stream.pipe(res);
+  } catch (error) {
+    console.error('Error al descargar plantilla:', error);
+    res.status(500).json({ error: 'Error al descargar la plantilla' });
+  }
+}
+
+/**
+ * Re-valida el PDF de una licitación existente
+ */
+export async function revalidarPdf(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  
+  try {
+    const lic = await prisma.licitacion.findUnique({ where: { id } });
+    
+    if (!lic) {
+      return res.status(404).json({ error: 'Licitación no encontrada' });
+    }
+
+    if (!lic.pdfPath) {
+      return res.status(400).json({ error: 'Esta licitación no tiene PDF adjunto' });
+    }
+
+    const rutaCompletaPdf = path.join(process.cwd(), lic.pdfPath.replace(/^\//, ''));
+    
+    if (!fs.existsSync(rutaCompletaPdf)) {
+      return res.status(404).json({ error: 'Archivo PDF no encontrado en el servidor' });
+    }
+
+    // Realizar validación
+    const resultadoValidacion = await validarRequisitosMinimos(rutaCompletaPdf);
+    const estadoValidacion = determinarEstadoValidacion(resultadoValidacion);
+
+    // Actualizar licitación con resultados
+    const licActualizada = await prisma.licitacion.update({
+      where: { id },
+      data: {
+        estadoValidacion,
+        seccionesFaltantes: resultadoValidacion.seccionesFaltantes,
+        mensajeValidacion: resultadoValidacion.mensaje,
+        fechaValidacion: new Date()
+      }
+    });
+
+    res.json({
+      licitacion: licActualizada,
+      validacion: {
+        ...resultadoValidacion,
+        estadoValidacion
+      }
+    });
+  } catch (error) {
+    console.error('Error al re-validar PDF:', error);
+    res.status(500).json({ error: 'Error al validar el PDF' });
   }
 }

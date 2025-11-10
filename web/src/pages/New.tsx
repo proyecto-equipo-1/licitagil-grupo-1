@@ -154,6 +154,21 @@ export default function NewPage() {
 
       <div className="form-group">
         <label htmlFor="pdf">PDF de la licitación (opcional, máx. 2MB)</label>
+        
+        {/* Botón de descarga de plantilla */}
+        <div style={{ marginBottom: '12px' }}>
+          <a 
+            href={`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/plantilla/descargar`}
+            className="btn btn-secondary"
+            download
+          >
+            📥 Descargar Plantilla Oficial (PDF)
+          </a>
+          <small style={{ display: 'block', marginTop: '8px', color: '#666', fontSize: '0.9em' }}>
+            💡 Usa esta plantilla PDF para asegurar que tu licitación cumpla con todos los requisitos mínimos
+          </small>
+        </div>
+
         <input 
           type="file"
           id="pdf"
@@ -162,14 +177,16 @@ export default function NewPage() {
           ref={pdfInputRef}
         />
         <small style={{color: '#666', fontSize: '0.9em'}}>
-          Solo archivos PDF. Tamaño máximo: 2MB
+          Solo archivos PDF. Tamaño máximo: 2MB. El sistema validará automáticamente los requisitos mínimos.
         </small>
       </div>
 
       <div className="form-actions">
-        <Link to="/" className="btn btn-secondary">Cancelar</Link>
+        <Link to="/" className="btn btn-secondary">
+          ← Cancelar
+        </Link>
         <button type="submit" className="btn btn-primary" data-testid="create-btn">
-          Crear Licitación
+          ✅ Crear Licitación
         </button>
       </div>
     </form>

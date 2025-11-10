@@ -21,4 +21,7 @@ r.get('/:id/pdf', c.getPdf);
 r.post('/', upload.single('pdf'), c.create);
 r.put('/:id', upload.single('pdf'), c.update);
 r.delete('/:id', c.remove);
+// Nuevos endpoints para validación
+r.get('/plantilla/descargar', c.descargarPlantilla);
+r.post('/:id/revalidar', c.revalidarPdf);
 export default r;

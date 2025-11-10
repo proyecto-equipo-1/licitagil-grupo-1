@@ -9,6 +9,8 @@ type Licitacion = {
   fechaCierre: string;
   estado: string;
   descripcion: string;
+  pdfPath?: string | null;
+  estadoValidacion?: 'Borrador' | 'Incompleta' | 'Completa';
 };
 
 const formatearFechaCierre = (fechaString: string) => {
@@ -121,6 +123,29 @@ export default function ListaLicitaciones() {
                   <p className="licitacion-fecha">
                     <strong>Fecha de cierre:</strong> {formatearFechaCierre(licitacion.fechaCierre)}
                   </p>
+                  
+                  {/* Badge de validación */}
+                  {licitacion.pdfPath && licitacion.estadoValidacion && (
+                    <div style={{ marginTop: '8px' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        backgroundColor: 
+                          licitacion.estadoValidacion === 'Completa' ? '#d4edda' : 
+                          licitacion.estadoValidacion === 'Incompleta' ? '#fff3cd' : '#f8d7da',
+                        color: 
+                          licitacion.estadoValidacion === 'Completa' ? '#155724' : 
+                          licitacion.estadoValidacion === 'Incompleta' ? '#856404' : '#721c24'
+                      }}>
+                        {licitacion.estadoValidacion === 'Completa' && '✅ Validada'}
+                        {licitacion.estadoValidacion === 'Incompleta' && '⚠️ Incompleta'}
+                        {licitacion.estadoValidacion === 'Borrador' && '📝 Borrador'}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <hr className="divider" />
@@ -134,7 +159,8 @@ export default function ListaLicitaciones() {
                     <button 
                       onClick={() => eliminarLicitacion(licitacion.id)} 
                       className="delete-btn" 
-                      title="Eliminar Licitación">
+                      title="Eliminar Licitación"
+                    >
                       🗑️
                     </button>
                   </div>
@@ -144,18 +170,36 @@ export default function ListaLicitaciones() {
           </div>
 
           <div className="pagination">
-            <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}>
+            <button 
+              onClick={() => setPagina(p => Math.max(1, p - 1))} 
+              disabled={pagina === 1}
+              className="btn btn-secondary"
+            >
               ◀ Anterior
             </button>
-            <span>Página {pagina} de {totalPaginas}</span>
-            <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}>
+            <span style={{ 
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}>
+              Página {pagina} de {totalPaginas}
+            </span>
+            <button 
+              onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} 
+              disabled={pagina === totalPaginas}
+              className="btn btn-secondary"
+            >
               Siguiente ▶
             </button>
           </div>
         </>
       )}
 
-      <Link to="/licitaciones/nueva" className="fab" title="Crear nueva licitación">
+      <Link 
+        to="/licitaciones/nueva" 
+        className="fab" 
+        title="Crear nueva licitación"
+      >
         +
       </Link>
     </div>

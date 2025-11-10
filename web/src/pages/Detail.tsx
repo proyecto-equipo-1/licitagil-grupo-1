@@ -13,6 +13,10 @@ type Licitacion = {
   descripcion: string;
   pdfPath?: string | null;
   pdfOriginalName?: string | null;
+  estadoValidacion?: 'Borrador' | 'Incompleta' | 'Completa';
+  seccionesFaltantes?: string[];
+  mensajeValidacion?: string | null;
+  fechaValidacion?: string | null;
 };
 
 const formatearFechaCompleta = (fechaString: string) => {
@@ -69,16 +73,23 @@ export default function Detail() {
             </div>
           )}
           <div style={{ marginTop: 16, textAlign: 'center' }}>
-          {lic.pdfOriginalName && <div style={{ marginBottom: 6, fontSize: 14 }}>{lic.pdfOriginalName}</div>}
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {lic.pdfOriginalName && (
+              <div style={{ marginBottom: 8, fontSize: 14, color: '#666' }}>
+                {lic.pdfOriginalName}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => window.open(`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/${id}/pdf`, '_blank')}
                 className="btn btn-primary"
-                style={{ fontSize: '14px' }}
               >
                 👁️ Ver PDF
               </button>
-              <a href={`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/${id}/pdf`} target="_blank" rel="noopener noreferrer" className="btn btn-pdf">
+              <a 
+                href={`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/${id}/pdf?download=1`}
+                className="btn btn-secondary"
+                download
+              >
                 📄 Descargar PDF
               </a>
             </div>
@@ -97,14 +108,57 @@ export default function Detail() {
         <div className="detalle-info">
           <p><strong>Estado:</strong> <span className={`estado-badge estado-${lic.estado.toLowerCase()}`}>{lic.estado.replace('_', ' ')}</span></p>
           <p><strong>Fecha de cierre:</strong> {formatearFechaCompleta(lic.fechaCierre)}</p>
+          
+          {/* Estado de Validación del PDF */}
+          {lic.pdfPath && lic.estadoValidacion && (
+            <div style={{ marginTop: '16px', padding: '12px', borderRadius: '8px', backgroundColor: 
+              lic.estadoValidacion === 'Completa' ? '#d4edda' : 
+              lic.estadoValidacion === 'Incompleta' ? '#fff3cd' : '#f8d7da',
+              border: `1px solid ${
+                lic.estadoValidacion === 'Completa' ? '#c3e6cb' : 
+                lic.estadoValidacion === 'Incompleta' ? '#ffeaa7' : '#f5c6cb'
+              }`
+            }}>
+              <p style={{ margin: 0, fontWeight: 'bold', color: 
+                lic.estadoValidacion === 'Completa' ? '#155724' : 
+                lic.estadoValidacion === 'Incompleta' ? '#856404' : '#721c24'
+              }}>
+                {lic.estadoValidacion === 'Completa' && '✅ Validación Completa'}
+                {lic.estadoValidacion === 'Incompleta' && '⚠️ Validación Incompleta'}
+                {lic.estadoValidacion === 'Borrador' && '📝 Borrador - Sin validar'}
+              </p>
+              {lic.mensajeValidacion && (
+                <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>{lic.mensajeValidacion}</p>
+              )}
+              {lic.seccionesFaltantes && lic.seccionesFaltantes.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <strong style={{ fontSize: '14px' }}>Secciones faltantes:</strong>
+                  <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px', fontSize: '14px' }}>
+                    {lic.seccionesFaltantes.map((seccion, idx) => (
+                      <li key={idx}>{seccion}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {lic.fechaValidacion && (
+                <p style={{ margin: '8px 0 0 0', fontSize: '12px', fontStyle: 'italic' }}>
+                  Validado: {formatearFechaCompleta(lic.fechaValidacion)}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <div className="detalle-descripcion">
           <strong>Descripción:</strong>
           <p style={{ marginTop: '8px' }}>{lic.descripcion}</p>
         </div>
         <div className="detalle-acciones">
-          <Link to="/" className="btn btn-secondary">Volver al Listado</Link>
-          <Link to={`/licitaciones/${lic.id}/editar`} className="btn btn-primary">Editar</Link>
+          <Link to="/" className="btn btn-secondary">
+            ← Volver al Listado
+          </Link>
+          <Link to={`/licitaciones/${lic.id}/editar`} className="btn btn-primary">
+            ✏️ Editar
+          </Link>
         </div>
       </div>
     </div>
