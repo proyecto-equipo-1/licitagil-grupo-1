@@ -5,31 +5,23 @@ backend:
     preBuild:
       commands:
         - echo "=== Backend preBuild ==="
-        - pwd && ls -la
-        - '[ -d api ] || { echo "Falta ./api"; exit 1; }'
-        - echo "Node version:" && node -v
-        # (Opcional) si tu imagen trae nvm y quieres fijar Node 20:
-        # - nvm install 20 && nvm use 20 && node -v
-
-        # 1) Instalar deps del backend
         - npm ci --prefix api
-
-        # 2) Forzar engines de Prisma (evitar WASM en CI)
         - export PRISMA_CLI_QUERY_ENGINE_TYPE=binary
         - export PRISMA_CLIENT_ENGINE_TYPE=library
-
-        # 3) Generar Prisma Client usando el CLI de api/
-        - echo "Generating Prisma Client..."
-        - npm exec --prefix api prisma generate
-    build:
+        # Verificar que el schema exista
+        - '[ -f api/prisma/schema.prisma ] || { echo "No existe api/prisma/schema.prisma"; ls -la api/prisma || true; exit 1; }'
+        # Generar el cliente indicando la ruta del schema (relativa a la raíz)
+        - npx --yes prisma generate --schema=api/prisma/schema.prisma
+  build:
       commands:
-        - echo "=== Backend Build ==="
         - npm run build --prefix api
-
-        # Migraciones solo si DATABASE_URL existe
-        - 'if [ -n "$DATABASE_URL" ]; then export PRISMA_CLI_QUERY_ENGINE_TYPE=binary; npm exec --prefix api prisma migrate deploy; else echo "Skipping migrations"; fi'
-
-        # Copiar PDFs
+        - |
+          if [ -n "$DATABASE_URL" ]; then
+            export PRISMA_CLI_QUERY_ENGINE_TYPE=binary
+            npx --yes prisma migrate deploy --schema=api/prisma/schema.prisma
+          else
+            echo "Skipping migrations (no DATABASE_URL)"
+          fi
         - mkdir -p api/dist/templates
         - 'cp api/templates/*.pdf api/dist/templates/ 2>/dev/null || echo "No PDFs found"'
     post_build:
