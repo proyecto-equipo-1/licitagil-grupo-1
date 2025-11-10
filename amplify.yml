@@ -8,18 +8,14 @@ backend:
         - pwd && ls -la
         - '[ -d api ] || { echo "Falta ./api"; exit 1; }'
         - npm ci --prefix api
-        - export PRISMA_CLI_QUERY_ENGINE_TYPE=binary
-        - export PRISMA_CLIENT_ENGINE_TYPE=library
-        - '[ -f api/prisma/schema.prisma ] || { echo "No existe api/prisma/schema.prisma"; ls -la api/prisma || true; exit 1; }'
-        - npx --yes prisma generate --schema=api/prisma/schema.prisma
+        - cd api && npx prisma generate
     build:
       commands:
         - echo "=== Backend Build ==="
         - npm run build --prefix api
         - >
           if [ -n "$DATABASE_URL" ]; then
-            export PRISMA_CLI_QUERY_ENGINE_TYPE=binary;
-            npx --yes prisma migrate deploy --schema=api/prisma/schema.prisma;
+            cd api && npx prisma migrate deploy;
           else
             echo "Skipping migrations (no DATABASE_URL)";
           fi
@@ -38,7 +34,7 @@ frontend:
     preBuild:
       commands:
         - echo "=== Frontend preBuild ==="
-        - '[ - d web ] && echo "web directory found" || { echo "Falta ./web"; exit 1; }'
+        - '[ -d web ] && echo "web directory found" || { echo "Falta ./web"; exit 1; }'
         - npm ci --prefix web
         - npm i --prefix web aws-amplify || true
     build:
