@@ -20,8 +20,13 @@ backend:
           else
             echo "Skipping migrations (no DATABASE_URL)";
           fi
+        - echo "Creating directories..."
         - mkdir -p api/dist/templates
-        - 'cp api/templates/*.pdf api/dist/templates/ 2>/dev/null || echo "No PDFs found"'
+        - mkdir -p api/dist/uploads
+        - echo "Copying template PDFs..."
+        - 'cp api/templates/*.pdf api/dist/templates/ 2>/dev/null || echo "⚠️ No template PDFs found"'
+        - echo "Verifying templates..."
+        - 'ls -la api/dist/templates/ || echo "Templates directory not found"'
   postBuild:
     commands:
       - echo "Backend build complete"

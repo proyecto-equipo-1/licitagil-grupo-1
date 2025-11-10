@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { validarRequisitosMinimos, determinarEstadoValidacion } from '../utils/pdfValidator.js';
+import { getTemplatesPath, getUploadsPath, getProjectRoot } from '../utils/paths.js';
 
 export async function list(req: Request, res: Response) {
   const page = Number(req.query.page) || 1;
@@ -46,8 +47,42 @@ export async function getPdf(req: Request, res: Response) {
   if (!lic) return res.status(404).json({ error: 'No encontrada' });
   if (!lic.pdfPath) return res.status(404).json({ error: 'No hay PDF' });
 
-  const filePath = path.join(process.cwd(), lic.pdfPath.replace(/^\//, ''));
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Archivo no encontrado' });
+  // Resolver la ruta completa del archivo
+  const projectRoot = getProjectRoot();
+  const uploadsPath = getUploadsPath();
+  
+  // Si la ruta empieza con /uploads/, reemplazarla por la ruta real
+  let filePath: string;
+  if (lic.pdfPath.startsWith('/uploads/') || lic.pdfPath.startsWith('uploads/')) {
+    const filename = path.basename(lic.pdfPath);
+    filePath = path.join(uploadsPath, filename);
+  } else {
+    filePath = path.join(projectRoot, lic.pdfPath.replace(/^\//, ''));
+  }
+  
+  console.log('🔍 Solicitud de PDF:', {
+    id,
+    pdfPath: lic.pdfPath,
+    projectRoot,
+    uploadsPath,
+    filePath,
+    exists: fs.existsSync(filePath)
+  });
+  
+  if (!fs.existsSync(filePath)) {
+    console.error('❌ PDF no encontrado:', filePath);
+    // Listar archivos en uploads para debugging
+    if (fs.existsSync(uploadsPath)) {
+      const files = fs.readdirSync(uploadsPath);
+      console.log('  Archivos en uploads:', files);
+    }
+    return res.status(404).json({ 
+      error: 'Archivo no encontrado',
+      filePath,
+      uploadsPath,
+      files: fs.existsSync(uploadsPath) ? fs.readdirSync(uploadsPath) : []
+    });
+  }
 
   // Si se solicita descarga forzada via ?download=1
   const forceDownload = req.query.download === '1' || req.query.download === 'true';
@@ -81,7 +116,16 @@ export async function create(req: Request, res: Response) {
     
     // Validar el PDF automáticamente
     try {
-      const rutaCompletaPdf = path.join(process.cwd(), 'uploads', req.file.filename);
+      const uploadsPath = getUploadsPath();
+      const rutaCompletaPdf = path.join(uploadsPath, req.file.filename);
+      
+      console.log('🔍 Validando PDF:', {
+        filename: req.file.filename,
+        uploadsPath,
+        rutaCompletaPdf,
+        exists: fs.existsSync(rutaCompletaPdf)
+      });
+      
       const resultadoValidacion = await validarRequisitosMinimos(rutaCompletaPdf);
       
       estadoValidacion = determinarEstadoValidacion(resultadoValidacion);
@@ -161,15 +205,37 @@ export async function update(req: Request, res: Response) {
     // Si se sube un nuevo archivo, eliminar el antiguo
     if (req.file) {
       if (existing.pdfPath) {
-        const oldPath = path.join(process.cwd(), existing.pdfPath.replace(/^\//, ''));
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        const projectRoot = getProjectRoot();
+        const uploadsPath = getUploadsPath();
+        let oldPath: string;
+        
+        if (existing.pdfPath.startsWith('/uploads/') || existing.pdfPath.startsWith('uploads/')) {
+          const filename = path.basename(existing.pdfPath);
+          oldPath = path.join(uploadsPath, filename);
+        } else {
+          oldPath = path.join(projectRoot, existing.pdfPath.replace(/^\//, ''));
+        }
+        
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+          console.log('🗑️ PDF antiguo eliminado:', oldPath);
+        }
       }
       data.pdfPath = `/uploads/${req.file.filename}`;
       data.pdfOriginalName = req.file.originalname;
 
       // Validar el nuevo PDF automáticamente
       try {
-        const rutaCompletaPdf = path.join(process.cwd(), 'uploads', req.file.filename);
+        const uploadsPath = getUploadsPath();
+        const rutaCompletaPdf = path.join(uploadsPath, req.file.filename);
+        
+        console.log('🔍 Validando nuevo PDF:', {
+          filename: req.file.filename,
+          uploadsPath,
+          rutaCompletaPdf,
+          exists: fs.existsSync(rutaCompletaPdf)
+        });
+        
         const resultadoValidacion = await validarRequisitosMinimos(rutaCompletaPdf);
         
         data.estadoValidacion = determinarEstadoValidacion(resultadoValidacion);
@@ -229,12 +295,31 @@ export async function remove(req: Request, res: Response) {
  */
 export async function descargarPlantilla(req: Request, res: Response) {
   try {
-    const plantillaPath = path.join(process.cwd(), 'templates', 'Plantilla_Licitacion_Oficial.pdf');
+    const templatesPath = getTemplatesPath();
+    const plantillaPath = path.join(templatesPath, 'Plantilla_Licitacion_Oficial.pdf');
+    
+    console.log('🔍 Descarga de plantilla solicitada');
+    console.log('  Templates directory:', templatesPath);
+    console.log('  Plantilla path:', plantillaPath);
+    console.log('  Existe:', fs.existsSync(plantillaPath));
     
     if (!fs.existsSync(plantillaPath)) {
-      return res.status(404).json({ error: 'Plantilla no encontrada' });
+      console.error('❌ Plantilla no encontrada');
+      // Listar archivos en el directorio templates
+      if (fs.existsSync(templatesPath)) {
+        const files = fs.readdirSync(templatesPath);
+        console.log('  Archivos en templates:', files);
+      }
+      
+      return res.status(404).json({ 
+        error: 'Plantilla no encontrada',
+        templatesPath,
+        plantillaPath,
+        files: fs.existsSync(templatesPath) ? fs.readdirSync(templatesPath) : []
+      });
     }
 
+    console.log('✅ Enviando plantilla');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="Plantilla_Licitacion_LicitAgil.pdf"');
     
@@ -263,10 +348,31 @@ export async function revalidarPdf(req: Request, res: Response) {
       return res.status(400).json({ error: 'Esta licitación no tiene PDF adjunto' });
     }
 
-    const rutaCompletaPdf = path.join(process.cwd(), lic.pdfPath.replace(/^\//, ''));
+    // Resolver ruta completa del PDF
+    const projectRoot = getProjectRoot();
+    const uploadsPath = getUploadsPath();
+    let rutaCompletaPdf: string;
+    
+    if (lic.pdfPath.startsWith('/uploads/') || lic.pdfPath.startsWith('uploads/')) {
+      const filename = path.basename(lic.pdfPath);
+      rutaCompletaPdf = path.join(uploadsPath, filename);
+    } else {
+      rutaCompletaPdf = path.join(projectRoot, lic.pdfPath.replace(/^\//, ''));
+    }
+    
+    console.log('🔍 Revalidando PDF:', {
+      id,
+      pdfPath: lic.pdfPath,
+      rutaCompletaPdf,
+      exists: fs.existsSync(rutaCompletaPdf)
+    });
     
     if (!fs.existsSync(rutaCompletaPdf)) {
-      return res.status(404).json({ error: 'Archivo PDF no encontrado en el servidor' });
+      return res.status(404).json({ 
+        error: 'Archivo PDF no encontrado en el servidor',
+        rutaCompletaPdf,
+        uploadsPath
+      });
     }
 
     // Realizar validación
@@ -282,6 +388,12 @@ export async function revalidarPdf(req: Request, res: Response) {
         mensajeValidacion: resultadoValidacion.mensaje,
         fechaValidacion: new Date()
       }
+    });
+    
+    console.log('✅ PDF revalidado:', {
+      id,
+      estado: estadoValidacion,
+      seccionesFaltantes: resultadoValidacion.seccionesFaltantes
     });
 
     res.json({
