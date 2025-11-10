@@ -3,21 +3,24 @@ backend:
   phases:
     preBuild:
       commands:
+        - echo "=== Backend preBuild Phase ==="
+        - echo "Current directory:" && pwd
+        - echo "Listing directories:" && ls -la
         - echo "Installing backend dependencies..."
-        - cd api
-        - npm ci
+        - cd api && npm ci
         - echo "Generating Prisma Client..."
-        - npx prisma generate
+        - cd api && npx prisma generate
     build:
       commands:
+        - echo "=== Backend Build Phase ==="
         - echo "Building backend..."
-        - npm run build
+        - cd api && npm run build
         - echo "Running database migrations (if DATABASE_URL is set)..."
-        - '[ -n "$DATABASE_URL" ] && npx prisma migrate deploy || echo "Skipping migrations: DATABASE_URL not set"'
+        - cd api && ([ -n "$DATABASE_URL" ] && npx prisma migrate deploy || echo "Skipping migrations: DATABASE_URL not set")
         - echo "Creating templates directory..."
-        - mkdir -p dist/templates
+        - cd api && mkdir -p dist/templates
         - echo "Copying template PDFs..."
-        - cp templates/*.pdf dist/templates/ || echo "No template PDFs found"
+        - cd api && (cp templates/*.pdf dist/templates/ || echo "No template PDFs found")
     post_build:
       commands:
         - echo "Backend build complete"
@@ -30,15 +33,20 @@ frontend:
   phases:
     preBuild:
       commands:
+        - echo "=== Frontend preBuild Phase ==="
+        - echo "Current directory:" && pwd
+        - echo "Listing directories:" && ls -la
+        - echo "Checking if web/ exists..." && test -d web && echo "web/ found!" || echo "web/ NOT found!"
         - echo "Installing frontend dependencies..."
-        - cd web
-        - npm ci
-        - npm install aws-amplify
+        - cd web && npm ci
+        - echo "Installing AWS Amplify..."
+        - cd web && npm install aws-amplify
     build:
       commands:
+        - echo "=== Frontend Build Phase ==="
         - echo "Building React application..."
-        - echo "VITE_API_URL=$VITE_API_URL" > .env.production
-        - npm run build -- --mode production
+        - cd web && echo "VITE_API_URL=$VITE_API_URL" > .env.production
+        - cd web && npm run build -- --mode production
   artifacts:
     baseDirectory: web/dist
     files:
