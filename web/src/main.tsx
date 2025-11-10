@@ -10,6 +10,7 @@ import NewPage from './pages/New'
 import EditPage from './pages/Edit'
 import Login from './pages/Login'  // ← Crear este
 import Register from './pages/Register'  // ← Crear este
+import Departamentos from './pages/Departamentos'  // ← Gestión de departamentos
 
 // Componente para manejar errores 404
 function ErrorPage() {
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
         { path: 'licitaciones/nueva', element: <NewPage /> },
         { path: 'licitaciones/:id', element: <Detail /> },
         { path: 'licitaciones/:id/editar', element: <EditPage /> },
+        { path: 'departamentos', element: <Departamentos /> },
         ]
       }
     ]

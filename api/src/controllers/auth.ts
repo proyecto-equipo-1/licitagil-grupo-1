@@ -20,7 +20,14 @@ export async function register(req: Request, res: Response) {
       });
     }
 
-    const { email, password, name } = validation.data;
+    const { email, password, name, rol, departamentoId } = validation.data;
+
+    // Validar que Funcionario y Supervisor tengan departamento
+    if ((rol === 'Funcionario' || rol === 'Supervisor') && !departamentoId) {
+      return res.status(400).json({ 
+        error: `El rol ${rol} requiere un departamento asignado` 
+      });
+    }
 
     // Verificar si el email ya existe
     const existingUser = await prisma.user.findUnique({
@@ -33,6 +40,19 @@ export async function register(req: Request, res: Response) {
       });
     }
 
+    // Verificar que el departamento existe si se proporciona
+    if (departamentoId) {
+      const departamento = await prisma.departamento.findUnique({
+        where: { id: departamentoId }
+      });
+
+      if (!departamento) {
+        return res.status(400).json({ 
+          error: 'El departamento especificado no existe' 
+        });
+      }
+    }
+
     // Hash de la contraseña
     const hashedPassword = await hashPassword(password);
 
@@ -41,12 +61,23 @@ export async function register(req: Request, res: Response) {
       data: {
         email,
         password: hashedPassword,
-        name: name || null
+        name: name || null,
+        rol: rol || 'Postulante',
+        departamentoId: departamentoId || null
       },
       select: {
         id: true,
         email: true,
         name: true,
+        rol: true,
+        departamentoId: true,
+        departamento: {
+          select: {
+            id: true,
+            nombre: true,
+            codigo: true
+          }
+        },
         createdAt: true
       }
     });
@@ -84,9 +115,18 @@ export async function login(req: Request, res: Response) {
 
     const { email, password } = validation.data;
 
-    // Buscar usuario
+    // Buscar usuario con relación a departamento
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      include: {
+        departamento: {
+          select: {
+            id: true,
+            nombre: true,
+            codigo: true
+          }
+        }
+      }
     });
 
     if (!user) {
@@ -112,7 +152,10 @@ export async function login(req: Request, res: Response) {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        rol: user.rol,
+        departamentoId: user.departamentoId,
+        departamento: user.departamento
       },
       token
     });
@@ -139,6 +182,15 @@ export async function getUser(req: AuthRequest, res: Response) {
         id: true,
         email: true,
         name: true,
+        rol: true,
+        departamentoId: true,
+        departamento: {
+          select: {
+            id: true,
+            nombre: true,
+            codigo: true
+          }
+        },
         createdAt: true
       }
     });

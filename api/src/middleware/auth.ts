@@ -1,11 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/auth.js';
+import { Rol } from '@prisma/client';
 
-// Extender Request para incluir user
+// Extender Request para incluir user con rol y departamento
 export interface AuthRequest extends Request {
   user?: {
     userId: number;
     email: string;
+    rol?: Rol;
+    departamentoId?: number | null;
+    departamento?: {
+      id: number;
+      nombre: string;
+      codigo: string;
+    } | null;
   };
 }
 

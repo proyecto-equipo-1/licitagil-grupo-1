@@ -1,18 +1,46 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/auth.css';
+
+interface Departamento {
+  id: number;
+  nombre: string;
+  codigo: string;
+}
 
 export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
+  const [rol, setRol] = useState<string>('Postulante');
+  const [departamentoId, setDepartamentoId] = useState<string>('');
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Cargar departamentos si el rol requiere departamento
+  useEffect(() => {
+    if (rol === 'Funcionario' || rol === 'Supervisor') {
+      fetchDepartamentos();
+    }
+  }, [rol]);
+
+  const fetchDepartamentos = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/departamentos');
+      if (response.ok) {
+        const data = await response.json();
+        setDepartamentos(data);
+      }
+    } catch (err) {
+      console.error('Error al cargar departamentos:', err);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -34,19 +62,33 @@ export default function Register() {
       return;
     }
 
+    // Validar departamento si es requerido
+    if ((rol === 'Funcionario' || rol === 'Supervisor') && !departamentoId) {
+      setError('Debes seleccionar un departamento para este rol');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const payload: any = { 
+        email, 
+        password,
+        name: name.trim(),
+        rol
+      };
+
+      // Agregar departamentoId solo si aplica
+      if (rol === 'Funcionario' || rol === 'Supervisor') {
+        payload.departamentoId = Number(departamentoId);
+      }
+
       const response = await fetch('http://localhost:3000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          email, 
-          password,
-          name: name.trim()
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -139,6 +181,42 @@ export default function Register() {
               disabled={isLoading}
             />
           </div>
+
+          <div className="form-group">
+            <label htmlFor="rol">Rol *</label>
+            <select
+              id="rol"
+              value={rol}
+              onChange={(e) => setRol(e.target.value)}
+              disabled={isLoading}
+            >
+              <option value="Postulante">Postulante</option>
+              <option value="Funcionario">Funcionario</option>
+              <option value="Supervisor">Supervisor</option>
+              <option value="Adquisiciones">Adquisiciones</option>
+              <option value="Administrador">Administrador</option>
+            </select>
+          </div>
+
+          {(rol === 'Funcionario' || rol === 'Supervisor') && (
+            <div className="form-group">
+              <label htmlFor="departamento">Departamento *</label>
+              <select
+                id="departamento"
+                value={departamentoId}
+                onChange={(e) => setDepartamentoId(e.target.value)}
+                required
+                disabled={isLoading}
+              >
+                <option value="">Selecciona un departamento</option>
+                {departamentos.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.nombre} ({dept.codigo})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button 
             type="submit" 
