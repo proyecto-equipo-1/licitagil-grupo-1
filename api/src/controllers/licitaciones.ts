@@ -1,45 +1,111 @@
 import { prisma } from '../db/prisma.js';
 import { licitacionCreateSchema, licitacionUpdateSchema } from '../schemas/licitacion.js';
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/auth.js';
+import { Rol, EstadoLicitacion } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 
-export async function list(req: Request, res: Response) {
-  const page = Number(req.query.page) || 1;
-  const pageSize = Number(req.query.pageSize) || 10;
-  const state = String(req.query.state || 'Todas').trim();
-  const search = String(req.query.search || '').trim();
+export async function list(req: AuthRequest, res: Response) {
+  try {
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.pageSize) || 10;
+    const state = String(req.query.state || 'Todas').trim();
+    const search = String(req.query.search || '').trim();
 
-  let where: any = {};
+    // Obtener usuario con rol y departamento
+    const usuario = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { rol: true, departamentoId: true }
+    });
 
-  if (search) {
-    where.titulo = { contains: search, mode: 'insensitive' };
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    let where: any = {};
+
+    // Filtro por búsqueda
+    if (search) {
+      where.titulo = { contains: search, mode: 'insensitive' };
+    }
+
+    // Filtro por estado
+    if (state !== 'Todas') {
+      where.estado = state;
+    }
+
+    // CONTROL DE ACCESO POR ROL
+    if (usuario.rol === Rol.Postulante) {
+      // Postulantes solo ven licitaciones Abiertas
+      where.estado = EstadoLicitacion.Abierta;
+    } else if (usuario.rol === Rol.Funcionario) {
+      // Funcionarios solo ven licitaciones de su departamento
+      where.departamentoId = usuario.departamentoId;
+    } else if (usuario.rol === Rol.Supervisor) {
+      // Supervisores ven licitaciones de su departamento
+      where.departamentoId = usuario.departamentoId;
+    }
+    // Admin y Adquisiciones ven todas (no se agrega filtro)
+
+    const [items, total] = await Promise.all([
+      prisma.licitacion.findMany({
+        where,
+        orderBy: { id: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          departamento: {
+            select: { nombre: true, codigo: true }
+          },
+          creador: {
+            select: { id: true, name: true, email: true }
+          },
+          aprobador: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      }),
+      prisma.licitacion.count({ where })
+    ]);
+
+    res.json({ items, total });
+  } catch (error) {
+    console.error('Error al listar licitaciones:', error);
+    res.status(500).json({ error: 'Error al listar licitaciones' });
   }
-
-  if (state !== 'Todas') {
-    where.estado = state;
-  }
-
-  const [items, total] = await Promise.all([
-    prisma.licitacion.findMany({
-      where,
-      orderBy: { id: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize
-    }),
-    prisma.licitacion.count({ where })
-  ]);
-  res.json({ items, total });
 }
 
-export async function getOne(req: Request, res: Response) {
-  const id = Number(req.params.id);
-  const lic = await prisma.licitacion.findUnique({ where: { id } });
-  if (!lic) return res.status(404).json({ error: 'No encontrada' });
-  res.json(lic);
+export async function getOne(req: AuthRequest, res: Response) {
+  try {
+    const id = Number(req.params.id);
+    const lic = await prisma.licitacion.findUnique({ 
+      where: { id },
+      include: {
+        departamento: {
+          select: { nombre: true, codigo: true }
+        },
+        creador: {
+          select: { id: true, name: true, email: true }
+        },
+        aprobador: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+    
+    if (!lic) {
+      return res.status(404).json({ error: 'No encontrada' });
+    }
+    
+    res.json(lic);
+  } catch (error) {
+    console.error('Error al obtener licitación:', error);
+    res.status(500).json({ error: 'Error al obtener licitación' });
+  }
 }
 
-export async function getPdf(req: Request, res: Response) {
+export async function getPdf(req: AuthRequest, res: Response) {
   const id = Number(req.params.id);
   const lic = await prisma.licitacion.findUnique({ where: { id } });
   if (!lic) return res.status(404).json({ error: 'No encontrada' });
@@ -67,41 +133,99 @@ export async function getPdf(req: Request, res: Response) {
   stream.pipe(res);
 }
 
-export async function create(req: Request, res: Response) {
-  // Si viene un archivo PDF, guardar la ruta
-  let pdfPath: string | undefined = undefined;
-  if (req.file) {
-    pdfPath = `/uploads/${req.file.filename}`;
-  }
-  // Si el frontend envía datos como form-data, los campos pueden venir como strings
-  const body = req.body;
-  // Convertir fecha_cierre a Date si es string
-  if (body.fecha_cierre && typeof body.fecha_cierre === 'string') {
-    body.fecha_cierre = new Date(body.fecha_cierre);
-  }
-  const parsed = licitacionCreateSchema.safeParse({
-    ...body,
-    fecha_cierre: body.fecha_cierre
-  });
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-  const { titulo, descripcion, estado, fecha_cierre } = parsed.data;
-  const lic = await prisma.licitacion.create({
-    data: {
-      titulo,
-      descripcion,
-      estado,
-      fechaCierre: new Date(fecha_cierre),
-      pdfPath,
-      pdfOriginalName: req.file ? req.file.originalname : undefined
+export async function create(req: AuthRequest, res: Response) {
+  try {
+    // Obtener usuario con rol y departamento
+    const usuario = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { rol: true, departamentoId: true }
+    });
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-  });
-  res.status(201).json(lic);
+
+    // Validar que Postulantes no puedan crear licitaciones
+    if (usuario.rol === Rol.Postulante) {
+      return res.status(403).json({ 
+        error: 'Los postulantes no pueden crear licitaciones' 
+      });
+    }
+
+    // Si viene un archivo PDF
+    let pdfPath: string | undefined = undefined;
+    if (req.file) {
+      pdfPath = `/uploads/${req.file.filename}`;
+    }
+
+    const body = req.body;
+    if (body.fecha_cierre && typeof body.fecha_cierre === 'string') {
+      body.fecha_cierre = new Date(body.fecha_cierre);
+    }
+
+    // Validar con Zod
+    const validation = licitacionCreateSchema.safeParse(body);
+    if (!validation.success) {
+      return res.status(400).json({ 
+        error: 'Datos inválidos', 
+        details: validation.error.errors 
+      });
+    }
+
+    const { titulo, descripcion, fecha_cierre } = validation.data;
+
+    // Determinar departamentoId
+    let departamentoId: number | null = null;
+    
+    if (usuario.rol === Rol.Funcionario) {
+      // Funcionarios solo pueden crear en su departamento
+      if (!usuario.departamentoId) {
+        return res.status(400).json({ 
+          error: 'Tu usuario no tiene departamento asignado' 
+        });
+      }
+      departamentoId = usuario.departamentoId;
+    } else if (usuario.rol === Rol.Supervisor) {
+      // Supervisores crean en su departamento
+      departamentoId = usuario.departamentoId || null;
+    }
+    // Adquisiciones y Admin pueden crear sin departamento (null)
+
+    // Determinar estado inicial
+    let estadoInicial: EstadoLicitacion = EstadoLicitacion.Borrador;
+    if (usuario.rol === Rol.Adquisiciones || usuario.rol === Rol.Administrador) {
+      estadoInicial = EstadoLicitacion.Abierta; // Directo a publicación
+    }
+
+    // Crear licitación
+    const licitacion = await prisma.licitacion.create({
+      data: {
+        titulo,
+        descripcion,
+        estado: estadoInicial,
+        fechaCierre: fecha_cierre,
+        pdfPath,
+        pdfOriginalName: req.file?.originalname,
+        creadorId: req.user!.userId,
+        departamentoId
+      },
+      include: {
+        departamento: { select: { nombre: true, codigo: true } },
+        creador: { select: { name: true, email: true } }
+      }
+    });
+
+    res.status(201).json(licitacion);
+  } catch (error) {
+    console.error('Error al crear licitación:', error);
+    res.status(500).json({ error: 'Error al crear licitación' });
+  }
 }
 
-export async function update(req: Request, res: Response) {
+export async function update(req: AuthRequest, res: Response) {
   const id = Number(req.params.id);
   // Si viene multipart/form-data (con archivo), los datos están en req.body y el archivo en req.file
-  const body = req.body || {};
+  const body: any = req.body || {};
   // convertir fecha si viene como string
   if (body.fecha_cierre && typeof body.fecha_cierre === 'string') body.fecha_cierre = new Date(body.fecha_cierre);
 
@@ -144,7 +268,7 @@ export async function update(req: Request, res: Response) {
   }
 }
 
-export async function remove(req: Request, res: Response) {
+export async function remove(req: AuthRequest, res: Response) {
   const id = Number(req.params.id);
   try {
     await prisma.licitacion.delete({ where: { id } });
