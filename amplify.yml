@@ -6,18 +6,30 @@ backend:
       commands:
         - echo "=== Backend preBuild ==="
         - pwd && ls -la
-        - '[ -d api ] || { echo "Falta ./api"; ls -la; exit 1; }'
-        - echo "Installing backend dependencies..."
+        - '[ -d api ] || { echo "Falta ./api"; exit 1; }'
+        - echo "Node version:" && node -v
+        # (Opcional) si tu imagen trae nvm y quieres fijar Node 20:
+        # - nvm install 20 && nvm use 20 && node -v
+
+        # 1) Instalar deps del backend
         - npm ci --prefix api
-        - echo "Generating Prisma Client (si no lo hizo postinstall)..."
-        - npx --yes prisma generate --schema=api/prisma/schema.prisma
+
+        # 2) Forzar engines de Prisma (evitar WASM en CI)
+        - export PRISMA_CLI_QUERY_ENGINE_TYPE=binary
+        - export PRISMA_CLIENT_ENGINE_TYPE=library
+
+        # 3) Generar Prisma Client usando el CLI de api/
+        - echo "Generating Prisma Client..."
+        - npm exec --prefix api prisma generate
     build:
       commands:
         - echo "=== Backend Build ==="
         - npm run build --prefix api
-        - echo "Running prisma migrate deploy (si hay DATABASE_URL)..."
-        - '[ -n "$DATABASE_URL" ] && npx --yes prisma migrate deploy --schema=api/prisma/schema.prisma || echo "Skipping migrations"'
-        - echo "Copying template PDFs..."
+
+        # Migraciones solo si DATABASE_URL existe
+        - 'if [ -n "$DATABASE_URL" ]; then export PRISMA_CLI_QUERY_ENGINE_TYPE=binary; npm exec --prefix api prisma migrate deploy; else echo "Skipping migrations"; fi'
+
+        # Copiar PDFs
         - mkdir -p api/dist/templates
         - 'cp api/templates/*.pdf api/dist/templates/ 2>/dev/null || echo "No PDFs found"'
     post_build:
@@ -27,22 +39,17 @@ backend:
     baseDirectory: api/dist
     files:
       - '**/*'
-      - templates/**/*
 
 frontend:
   phases:
     preBuild:
       commands:
         - echo "=== Frontend preBuild ==="
-        - pwd && ls -la
-        - '[ -d web ] || { echo "Falta ./web"; ls -la; exit 1; }'
-        - echo "Installing frontend dependencies..."
+        - '[ -d web ] || { echo "Falta ./web"; exit 1; }'
         - npm ci --prefix web
-        - echo "Installing AWS Amplify (si no está en package.json, de lo contrario omite esto)..."
-        - npm i aws-amplify --prefix web || true
+        - npm i --prefix web aws-amplify || true
     build:
       commands:
-        - echo "=== Frontend Build ==="
         - 'echo "VITE_API_URL=$VITE_API_URL" > web/.env.production'
         - npm run build --prefix web -- --mode production
   artifacts:
