@@ -1,26 +1,25 @@
 version: 1
+
 backend:
   phases:
     preBuild:
       commands:
-        - echo "=== Backend preBuild Phase ==="
-        - pwd
-        - ls -la
+        - echo "=== Backend preBuild ==="
+        - pwd && ls -la
+        - '[ -d api ] || { echo "Falta ./api"; ls -la; exit 1; }'
         - echo "Installing backend dependencies..."
-        - cd api && npm ci
-        - echo "Generating Prisma Client..."
-        - cd api && npx prisma generate
+        - npm ci --prefix api
+        - echo "Generating Prisma Client (si no lo hizo postinstall)..."
+        - npx --yes prisma generate --schema=api/prisma/schema.prisma
     build:
       commands:
-        - echo "=== Backend Build Phase ==="
-        - echo "Building backend..."
-        - cd api && npm run build
-        - echo "Running database migrations if DATABASE_URL is set..."
-        - 'cd api && ([ -n "$DATABASE_URL" ] && npx prisma migrate deploy || echo "Skipping migrations")'
-        - echo "Creating templates directory..."
-        - cd api && mkdir -p dist/templates
+        - echo "=== Backend Build ==="
+        - npm run build --prefix api
+        - echo "Running prisma migrate deploy (si hay DATABASE_URL)..."
+        - '[ -n "$DATABASE_URL" ] && npx --yes prisma migrate deploy --schema=api/prisma/schema.prisma || echo "Skipping migrations"'
         - echo "Copying template PDFs..."
-        - cd api && (cp templates/*.pdf dist/templates/ || echo "No PDFs found")
+        - mkdir -p api/dist/templates
+        - 'cp api/templates/*.pdf api/dist/templates/ 2>/dev/null || echo "No PDFs found"'
     post_build:
       commands:
         - echo "Backend build complete"
@@ -29,24 +28,23 @@ backend:
     files:
       - '**/*'
       - templates/**/*
+
 frontend:
   phases:
     preBuild:
       commands:
-        - echo "=== Frontend preBuild Phase ==="
-        - pwd
-        - ls -la
-        - test -d web && echo "web directory found" || echo "web directory NOT found"
+        - echo "=== Frontend preBuild ==="
+        - pwd && ls -la
+        - '[ -d web ] || { echo "Falta ./web"; ls -la; exit 1; }'
         - echo "Installing frontend dependencies..."
-        - cd web && npm ci
-        - echo "Installing AWS Amplify..."
-        - cd web && npm install aws-amplify
+        - npm ci --prefix web
+        - echo "Installing AWS Amplify (si no está en package.json, de lo contrario omite esto)..."
+        - npm i aws-amplify --prefix web || true
     build:
       commands:
-        - echo "=== Frontend Build Phase ==="
-        - echo "Building React application..."
-        - cd web && echo "VITE_API_URL=$VITE_API_URL" > .env.production
-        - cd web && npm run build -- --mode production
+        - echo "=== Frontend Build ==="
+        - 'echo "VITE_API_URL=$VITE_API_URL" > web/.env.production'
+        - npm run build --prefix web -- --mode production
   artifacts:
     baseDirectory: web/dist
     files:
