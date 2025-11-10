@@ -1,9 +1,36 @@
 version: 1
+backend:
+  phases:
+    preBuild:
+      commands:
+        - echo "Installing backend dependencies..."
+        - cd api
+        - npm ci
+        - echo "Generating Prisma Client..."
+        - npx prisma generate
+        - echo "Running database migrations..."
+        - npx prisma migrate deploy
+    build:
+      commands:
+        - echo "Building backend..."
+        - npm run build
+        - echo "Creating templates directory..."
+        - mkdir -p dist/templates
+        - echo "Copying template PDFs..."
+        - cp templates/*.pdf dist/templates/ || echo "No template PDFs found"
+    post_build:
+      commands:
+        - echo "Backend build complete"
+  artifacts:
+    baseDirectory: api/dist
+    files:
+      - '**/*'
+      - templates/**/*
 frontend:
   phases:
     preBuild:
       commands:
-        - echo "Installing dependencies..."
+        - echo "Installing frontend dependencies..."
         - cd web
         - npm ci
         - npm install aws-amplify
@@ -19,3 +46,4 @@ frontend:
   cache:
     paths:
       - web/node_modules/**/*
+      - api/node_modules/**/*
