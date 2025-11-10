@@ -8,14 +8,14 @@ backend:
         - pwd && ls -la
         - '[ -d api ] || { echo "Falta ./api"; exit 1; }'
         - npm ci --prefix api
-        - cd api && node_modules/.bin/prisma generate
+        - '(cd api && node_modules/.bin/prisma generate)'
     build:
       commands:
         - echo "=== Backend Build ==="
         - npm run build --prefix api
         - >
           if [ -n "$DATABASE_URL" ]; then
-            cd api && node_modules/.bin/prisma migrate deploy;
+            (cd api && node_modules/.bin/prisma migrate deploy);
           else
             echo "Skipping migrations (no DATABASE_URL)";
           fi
