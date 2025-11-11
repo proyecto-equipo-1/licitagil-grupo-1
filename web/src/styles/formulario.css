@@ -118,3 +118,48 @@
   background-color: #d8dde2;
   border-color: #adb5bd;
 }
+/* En tu archivo src/styles/formulario.css */
+
+.form-page-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.actions-panel {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.actions-panel-title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #343a40;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 0.5rem;
+}
+
+.actions-panel-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Estilos para los botones de acción (puedes personalizarlos) */
+.btn.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+.btn.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+.btn.btn-info {
+  background-color: #17a2b8;
+  color: white;
+}
