@@ -260,6 +260,80 @@ Ver guía completa: [FIX_AWS_LOGIN.md](./docs/FIX_AWS_LOGIN.md)
 
 ---
 
+## ☁️ Despliegue en AWS (Producción)
+
+### **Arquitectura de 3 Capas**
+
+LicitAgil implementa una arquitectura completa en AWS con los siguientes componentes:
+
+- **Frontend**: AWS Amplify (React + Vite)
+- **Backend**: AWS Elastic Beanstalk (Node.js 20 + Express)
+- **Database**: AWS RDS PostgreSQL
+
+```
+┌─────────────────────────────────────────────────┐
+│  Frontend (AWS Amplify)                         │
+│  https://testing.d386d94bix0hzl.amplifyapp.com │
+│                    ▼                            │
+│  Backend (AWS Elastic Beanstalk)                │
+│  http://licitagil-api.elasticbeanstalk.com     │
+│                    ▼                            │
+│  Database (AWS RDS PostgreSQL)                  │
+│  licitagil-db.ci5ueuc6c4vi.us-east-1.rds...   │
+└─────────────────────────────────────────────────┘
+```
+
+### **📖 Guías de Despliegue**
+
+#### **Inicio Rápido** ⚡
+Para desplegar rápidamente (30 minutos):
+- 📖 **[Quick Start AWS](./docs/QUICK_START_AWS.md)** - Pasos esenciales
+- 📖 **[Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md)** - Checklist interactivo
+
+#### **Documentación Completa** 📚
+Para entender la arquitectura y proceso detallado:
+- 📖 **[Índice de Documentación AWS](./docs/INDEX_AWS_DOCS.md)** - Hub central
+- 📖 **[Deployment Summary](./docs/DEPLOYMENT_SUMMARY.md)** - Resumen ejecutivo
+- 📖 **[AWS Elastic Beanstalk Guide](./docs/AWS_ELASTIC_BEANSTALK_DEPLOYMENT.md)** - Guía completa
+- 📖 **[Release Notes](./docs/AWS_RELEASE_NOTES.md)** - Notas de versión
+
+### **🚀 Despliegue Rápido con Script**
+
+```powershell
+# 1. Verificar pre-requisitos
+.\scripts\deploy-elastic-beanstalk.ps1 check
+
+# 2. Crear paquete de despliegue
+.\scripts\deploy-elastic-beanstalk.ps1 zip
+
+# 3. Subir a AWS Console o usar EB CLI
+.\scripts\deploy-elastic-beanstalk.ps1 deploy
+```
+
+### **💰 Costos Estimados**
+
+| Servicio | Configuración | Costo/mes |
+|----------|---------------|-----------|
+| AWS Amplify | Build + Hosting | $5-10 |
+| Elastic Beanstalk | t3.micro | $10-15 |
+| RDS PostgreSQL | db.t3.micro | $15-20 |
+| **TOTAL** | | **$30-45** |
+
+💡 **Gratis con AWS Free Tier** (12 meses para nuevos usuarios)
+
+### **✅ Estado del Deployment**
+
+- ✅ Frontend desplegado en Amplify
+- ✅ Base de datos RDS PostgreSQL operativa
+- ✅ Configuración de EB lista (`.ebextensions/`)
+- ✅ Scripts de automatización listos
+- ✅ Documentación completa
+- 📦 Backend pendiente de despliegue a EB
+
+Ver **[INDEX_AWS_DOCS.md](./docs/INDEX_AWS_DOCS.md)** para guías paso a paso.
+
+---
+
 ## 🧪 Pruebas Automatizadas
 
 ### **Cypress (E2E Testing)**

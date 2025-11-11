@@ -193,11 +193,64 @@ API: https://mqru1bnmg2.execute-api.us-east-1.amazonaws.com/dev
   }
 
   post {
-    success { echo "✅ PIPELINE EXITOSO" }
+    success {
+      echo "✅ PIPELINE EXITOSO"
+      script {
+        def appUrl = "https://${env.AMPLIFY_BRANCH}.${env.AMPLIFY_APP_ID}.amplifyapp.com"
+        slackSend(
+          color: 'good',
+          channel: '#jenkins',
+          message: """
+✅ *Pipeline Exitoso* - ${env.JOB_NAME}
+*Build:* #${env.BUILD_NUMBER}
+*Branch:* ${env.BRANCH_NAME}
+*Environment:* ${env.DEPLOY_ENV}
+*Duración:* ${currentBuild.durationString.replace(' and counting', '')}
+*URLs:*
+• Frontend: ${appUrl}
+• API: https://mqru1bnmg2.execute-api.us-east-1.amazonaws.com/dev
+*Logs:* ${env.BUILD_URL}console
+          """.stripIndent()
+        )
+      }
+    }
     failure {
       echo "❌ PIPELINE FALLÓ"
       echo "Ver logs: ${env.BUILD_URL}console"
+      script {
+        slackSend(
+          color: 'danger',
+          channel: '#jenkins',
+          message: """
+❌ *Pipeline Fallido* - ${env.JOB_NAME}
+*Build:* #${env.BUILD_NUMBER}
+*Branch:* ${env.BRANCH_NAME}
+*Environment:* ${env.DEPLOY_ENV}
+*Duración:* ${currentBuild.durationString.replace(' and counting', '')}
+*Logs:* ${env.BUILD_URL}console
+*Acción requerida:* Revisar logs para identificar el problema
+          """.stripIndent()
+        )
+      }
     }
-    always { echo "🧹 Limpieza completada" }
+    unstable {
+      script {
+        slackSend(
+          color: 'warning',
+          channel: '#jenkins',
+          message: """
+⚠️ *Pipeline Inestable* - ${env.JOB_NAME}
+*Build:* #${env.BUILD_NUMBER}
+*Branch:* ${env.BRANCH_NAME}
+*Environment:* ${env.DEPLOY_ENV}
+*Logs:* ${env.BUILD_URL}console
+*Nota:* El pipeline completó con advertencias
+          """.stripIndent()
+        )
+      }
+    }
+    always {
+      echo "🧹 Limpieza completada"
+    }
   }
 }
