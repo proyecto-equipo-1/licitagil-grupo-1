@@ -130,23 +130,6 @@
   height: fit-content;
 }
 
-.btn-pdf {
-  background-color: #dc3545;
-  color: white;
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.2s;
-}
-
-.btn-pdf:hover {
-  background-color: #c82333;
-  text-decoration: none;
-  color: white;
-}
-
 /* Responsive */
 @media (max-width: 1024px) {
   .detalle-flex-container {

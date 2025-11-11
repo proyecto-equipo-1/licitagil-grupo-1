@@ -1,0 +1,27 @@
+version: 1.0
+runtime: nodejs20
+build:
+  commands:
+    pre-build:
+      - cd api
+      - npm ci
+      - npx prisma generate
+    build:
+      - npm run build
+      - mkdir -p dist/uploads dist/templates
+      - cp templates/*.pdf dist/templates/ 2>/dev/null || echo "No templates"
+    post-build:
+      - echo "Build complete"
+  env:
+    - name: NODE_ENV
+      value: "production"
+run:
+  runtime-version: 20
+  command: node dist/index.js
+  network:
+    port: 3000
+  env:
+    - name: NODE_ENV
+      value: "production"
+    - name: PORT
+      value: "3000"

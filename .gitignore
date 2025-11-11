@@ -3,6 +3,8 @@ node_modules
 dist
 .env
 .env.*
+!.env.example
+!.env.jenkins.example
 *.log
 .DS_Store
 
@@ -16,6 +18,15 @@ api/dist
 
 # prisma
 api/prisma/dev.db
+
+# Jenkins
+.jenkins/
+jenkins_home/
+*.jenkinsfile.bak
+
+# CI/CD
+.pipeline/
+build-*.log
 
 #amplify-do-not-edit-begin
 amplify/\#current-cloud-backend
@@ -38,3 +49,4 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
+backend-deploy-v2.zip

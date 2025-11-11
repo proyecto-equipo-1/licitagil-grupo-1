@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchJSON } from '../services/api';
 import '../styles/EventList.css';
+import '../styles/badges.css';
 
 type Licitacion = {
   id: number;
@@ -9,6 +10,8 @@ type Licitacion = {
   fechaCierre: string;
   estado: string;
   descripcion: string;
+  pdfPath?: string | null;
+  estadoValidacion?: 'Borrador' | 'Incompleta' | 'Completa';
 };
 
 const formatearFechaCierre = (fechaString: string) => {
@@ -18,11 +21,20 @@ const formatearFechaCierre = (fechaString: string) => {
 
 const formatearEstado = (estado: string) => {
   const estadosFormateados: { [key: string]: string } = {
+    'Borrador': 'Borrador',
+    'PendienteAprobacion': 'Pendiente Aprobación',
+    'Aprobada': 'Aprobada',
     'Abierta': 'Abierta',
     'En_revision': 'En revisión',
-    'Cerrada': 'Cerrada'
+    'Cerrada': 'Cerrada',
+    'Rechazada': 'Rechazada'
   };
   return estadosFormateados[estado] || estado;
+};
+
+const getEstadoBadgeClass = (estado: string) => {
+  const claseEstado = estado.toLowerCase().replace('_', '');
+  return `badge badge-${claseEstado}`;
 };
 
 export default function ListaLicitaciones() {
@@ -91,9 +103,13 @@ export default function ListaLicitaciones() {
               className="estado-select"
             >
               <option value="Todas">Todas</option>
+              <option value="Borrador">Borrador</option>
+              <option value="PendienteAprobacion">Pendiente Aprobación</option>
+              <option value="Aprobada">Aprobada</option>
               <option value="Abierta">Abierta</option>
               <option value="En_revision">En revisión</option>
               <option value="Cerrada">Cerrada</option>
+              <option value="Rechazada">Rechazada</option>
             </select>
           </div>
         </div>
@@ -114,13 +130,38 @@ export default function ListaLicitaciones() {
             {licitaciones.map((licitacion) => (
               <div key={licitacion.id} className="licitacion-card">
                 <div className="licitacion-info">
-                  <p className="licitacion-estado">{formatearEstado(licitacion.estado)}</p>
+                  <span className={getEstadoBadgeClass(licitacion.estado)}>
+                    {formatearEstado(licitacion.estado)}
+                  </span>
                   <Link to={`/licitaciones/${licitacion.id}`} className="licitacion-titulo">
                     {licitacion.titulo}
                   </Link>
                   <p className="licitacion-fecha">
                     <strong>Fecha de cierre:</strong> {formatearFechaCierre(licitacion.fechaCierre)}
                   </p>
+                  
+                  {/* Badge de validación */}
+                  {licitacion.pdfPath && licitacion.estadoValidacion && (
+                    <div style={{ marginTop: '8px' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        backgroundColor: 
+                          licitacion.estadoValidacion === 'Completa' ? '#d4edda' : 
+                          licitacion.estadoValidacion === 'Incompleta' ? '#fff3cd' : '#f8d7da',
+                        color: 
+                          licitacion.estadoValidacion === 'Completa' ? '#155724' : 
+                          licitacion.estadoValidacion === 'Incompleta' ? '#856404' : '#721c24'
+                      }}>
+                        {licitacion.estadoValidacion === 'Completa' && '✅ Validada'}
+                        {licitacion.estadoValidacion === 'Incompleta' && '⚠️ Incompleta'}
+                        {licitacion.estadoValidacion === 'Borrador' && '📝 Borrador'}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <hr className="divider" />
@@ -134,7 +175,8 @@ export default function ListaLicitaciones() {
                     <button 
                       onClick={() => eliminarLicitacion(licitacion.id)} 
                       className="delete-btn" 
-                      title="Eliminar Licitación">
+                      title="Eliminar Licitación"
+                    >
                       🗑️
                     </button>
                   </div>
@@ -144,18 +186,36 @@ export default function ListaLicitaciones() {
           </div>
 
           <div className="pagination">
-            <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}>
+            <button 
+              onClick={() => setPagina(p => Math.max(1, p - 1))} 
+              disabled={pagina === 1}
+              className="btn btn-secondary"
+            >
               ◀ Anterior
             </button>
-            <span>Página {pagina} de {totalPaginas}</span>
-            <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}>
+            <span style={{ 
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}>
+              Página {pagina} de {totalPaginas}
+            </span>
+            <button 
+              onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} 
+              disabled={pagina === totalPaginas}
+              className="btn btn-secondary"
+            >
               Siguiente ▶
             </button>
           </div>
         </>
       )}
 
-      <Link to="/licitaciones/nueva" className="fab" title="Crear nueva licitación">
+      <Link 
+        to="/licitaciones/nueva" 
+        className="fab" 
+        title="Crear nueva licitación"
+      >
         +
       </Link>
     </div>

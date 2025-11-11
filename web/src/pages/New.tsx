@@ -2,10 +2,10 @@ import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchJSON } from '../services/api';
 import '../styles/formulario.css'; 
+
 type NuevaLicitacionForm = {
   titulo: string;
   descripcion: string;
-  estado: 'Abierta' | 'En_revision' | 'Cerrada';
   fecha_cierre: string;
 };
 
@@ -15,7 +15,6 @@ export default function NewPage() {
   const [form, setForm] = useState<NuevaLicitacionForm>({
     titulo: '',
     descripcion: '',
-    estado: 'Abierta',
     fecha_cierre: ''
   });
 
@@ -54,12 +53,17 @@ export default function NewPage() {
         const formData = new FormData();
         formData.append('titulo', form.titulo);
         formData.append('descripcion', form.descripcion);
-        formData.append('estado', form.estado);
-        formData.append('fechaCierre', form.fecha_cierre);
+        formData.append('fecha_cierre', form.fecha_cierre);
         formData.append('pdf', pdfInputRef.current.files[0]);
+        
+        // Obtener token de localStorage
+        const token = localStorage.getItem('token');
         
         const response = await fetch(`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones`, {
           method: 'POST',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: formData
         });
         
@@ -74,8 +78,7 @@ export default function NewPage() {
         const licitacionData = {
           titulo: form.titulo,
           descripcion: form.descripcion,
-          estado: form.estado,
-          fechaCierre: form.fecha_cierre
+          fecha_cierre: form.fecha_cierre
         };
         
         const lic = await fetchJSON('/api/licitaciones', {
@@ -121,20 +124,6 @@ export default function NewPage() {
       </div>
 
       <div className="form-group">
-        <label htmlFor="estado">Estado</label>
-        <select 
-          id="estado"
-          name="estado"
-          value={form.estado} 
-          onChange={handleInputChange}
-        >
-          <option value="Abierta">Abierta</option>
-          <option value="En_revision">En revisión</option>
-          <option value="Cerrada">Cerrada</option>
-        </select>
-      </div>
-
-      <div className="form-group">
         <label htmlFor="fecha_cierre">Fecha de cierre</label>
         <input 
           type="datetime-local" 
@@ -148,6 +137,21 @@ export default function NewPage() {
 
       <div className="form-group">
         <label htmlFor="pdf">PDF de la licitación (opcional, máx. 2MB)</label>
+        
+        {/* Botón de descarga de plantilla */}
+        <div style={{ marginBottom: '12px' }}>
+          <a 
+            href={`${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/plantilla/descargar`}
+            className="btn btn-secondary"
+            download
+          >
+            📥 Descargar Plantilla Oficial (PDF)
+          </a>
+          <small style={{ display: 'block', marginTop: '8px', color: '#666', fontSize: '0.9em' }}>
+            💡 Usa esta plantilla PDF para asegurar que tu licitación cumpla con todos los requisitos mínimos
+          </small>
+        </div>
+
         <input 
           type="file"
           id="pdf"
@@ -156,14 +160,16 @@ export default function NewPage() {
           ref={pdfInputRef}
         />
         <small style={{color: '#666', fontSize: '0.9em'}}>
-          Solo archivos PDF. Tamaño máximo: 2MB
+          Solo archivos PDF. Tamaño máximo: 2MB. El sistema validará automáticamente los requisitos mínimos.
         </small>
       </div>
 
       <div className="form-actions">
-        <Link to="/" className="btn btn-secondary">Cancelar</Link>
+        <Link to="/" className="btn btn-secondary">
+          ← Cancelar
+        </Link>
         <button type="submit" className="btn btn-primary" data-testid="create-btn">
-          Crear Licitación
+          ✅ Crear Licitación
         </button>
       </div>
     </form>

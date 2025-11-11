@@ -1,11 +1,16 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'  // ← Importar
+import ProtectedRoute from './components/ProtectedRoute'  // ← Importar
 import App from './App'
 import List from './pages/List'
 import Detail from './pages/Detail'
 import NewPage from './pages/New'
 import EditPage from './pages/Edit'
+import Login from './pages/Login'  // ← Crear este
+import Register from './pages/Register'  // ← Crear este
+import Departamentos from './pages/Departamentos'  // ← Gestión de departamentos
 
 // Componente para manejar errores 404
 function ErrorPage() {
@@ -27,16 +32,34 @@ function ErrorPage() {
 }
 
 const router = createBrowserRouter([
-  { 
-    path: '/', 
-    element: <App />, 
+  {
+    path: '/login', 
+    element: <Login />
+  },
+  {
+    path: '/register', 
+    element: <Register />
+  },
+  {  
+    element: <ProtectedRoute />, 
     errorElement: <ErrorPage />,
     children: [
-      { index: true, element: <List /> },
-      { path: 'licitaciones/nueva', element: <NewPage /> },
-      { path: 'licitaciones/:id', element: <Detail /> },
-      { path: 'licitaciones/:id/editar', element: <EditPage /> },
+      { 
+        path: '/', 
+        element: <App />, 
+        children: [
+        { index: true, element: <List /> },
+        { path: 'licitaciones/nueva', element: <NewPage /> },
+        { path: 'licitaciones/:id', element: <Detail /> },
+        { path: 'licitaciones/:id/editar', element: <EditPage /> },
+        { path: 'departamentos', element: <Departamentos /> },
+        ]
+      }
     ]
   }
 ])
-ReactDOM.createRoot(document.getElementById('root')!).render(<RouterProvider router={router} />)
+ReactDOM.createRoot(document.getElementById('root')!).render(
+   <AuthProvider>
+    <RouterProvider router={router} />
+  </AuthProvider>
+)

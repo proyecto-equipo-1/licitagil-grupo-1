@@ -19,6 +19,7 @@ body {
   padding-bottom: 20px;
   margin-bottom: 30px;
   border-bottom: 1px solid #e0e0e0; 
+  gap: 20px;
 }
 
 .logo {
@@ -53,4 +54,45 @@ body {
 .app-nav a.active {
   background-color: #007bff; 
   color: #fff;
+}
+
+/* User menu y logout */
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.user-name {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+
+.user-role {
+  font-size: 13px;
+  color: #777;
+  font-weight: 400;
+}
+
+.btn-logout {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-logout:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+}
+
+.btn-logout:active {
+  transform: translateY(0);
 }

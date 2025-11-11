@@ -1,17 +1,52 @@
 version: 1
+
+backend:
+  phases:
+    preBuild:
+      commands:
+        - echo "=== Backend preBuild ==="
+        - pwd && ls -la
+        - '[ -d api ] || { echo "Falta ./api"; exit 1; }'
+        - npm ci --prefix api
+        - '(cd api && node_modules/.bin/prisma generate)'
+    build:
+      commands:
+        - echo "=== Backend Build ==="
+        - npm run build --prefix api
+        - >
+          if [ -n "$DATABASE_URL" ]; then
+            echo "Running migrations...";
+            (cd api && node_modules/.bin/prisma migrate deploy) || echo "⚠️ Migration failed (check RDS connectivity)";
+          else
+            echo "Skipping migrations (no DATABASE_URL)";
+          fi
+        - echo "Creating directories..."
+        - mkdir -p api/dist/templates
+        - mkdir -p api/dist/uploads
+        - echo "Copying template PDFs..."
+        - 'cp api/templates/*.pdf api/dist/templates/ 2>/dev/null || echo "⚠️ No template PDFs found"'
+        - echo "Verifying templates..."
+        - 'ls -la api/dist/templates/ || echo "Templates directory not found"'
+  postBuild:
+    commands:
+      - echo "Backend build complete"
+  artifacts:
+    baseDirectory: api/dist
+    files:
+      - '**/*'
+
 frontend:
   phases:
     preBuild:
       commands:
-        - echo "Installing dependencies..."
-        - cd web
-        - npm ci
-        - npm install aws-amplify
+        - echo "=== Frontend preBuild ==="
+        - '[ -d web ] && echo "web directory found" || { echo "Falta ./web"; exit 1; }'
+        - npm ci --prefix web
+        - npm i --prefix web aws-amplify || true
     build:
       commands:
-        - echo "Building React application..."
-        - echo "VITE_API_URL=https://mqru1bnmg2.execute-api.us-east-1.amazonaws.com/dev" > .env.production
-        - npm run build -- --mode production
+        - 'echo "VITE_API_URL=$VITE_API_URL" > web/.env.production'
+        - npm run build --prefix web -- --mode production
   artifacts:
     baseDirectory: web/dist
     files:
@@ -19,3 +54,4 @@ frontend:
   cache:
     paths:
       - web/node_modules/**/*
+      - api/node_modules/**/*

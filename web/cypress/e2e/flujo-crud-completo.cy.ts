@@ -1,4 +1,4 @@
-// 🎯 Flujo Completo de Pruebas E2E - CRUD Real
+// 🎯 Flujo Completo de Pruebas E2E - CRUD Real con Autenticación
 describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar → Eliminar)', () => {
   // Variables compartidas entre todos los tests
   const licitacionTest = {
@@ -7,6 +7,26 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     descripcionOriginal: '',
     estadoOriginal: 'Abierta'
   }
+
+  // 🔐 CONFIGURACIÓN DE AUTENTICACIÓN
+  let testUser = {
+    email: '',
+    password: 'TestCypress2024!Secure',
+    token: ''
+  }
+
+  // ✨ NUEVO: Setup de autenticación antes de todos los tests
+  before(() => {
+    cy.log('🔐 Configurando autenticación para tests de CRUD...')
+    
+    // Crear usuario único y hacer login
+    cy.setupAuthenticatedUser('crud-test').then((userData) => {
+      testUser.email = userData.email
+      testUser.token = userData.token
+      cy.log(`✅ Usuario autenticado: ${testUser.email}`)
+      cy.log(`🔑 Token obtenido: ${testUser.token.substring(0, 20)}...`)
+    })
+  })
 
   // Configurar manejo de excepciones esperadas
   beforeEach(() => {
@@ -23,7 +43,17 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
       return true
     })
 
-    cy.visit('/')
+    // ✨ Visitar página y establecer token en localStorage
+    cy.log(`🔑 Estableciendo token antes de visitar la página...`)
+    cy.visit('/', {
+      onBeforeLoad: (win) => {
+        // Establecer token del usuario creado en before()
+        // NO usar cy.log() aquí - solo código síncrono
+        win.localStorage.setItem('token', testUser.token)
+      }
+    })
+    
+    cy.log(`✅ Token establecido, página cargada`)
     cy.get('body').should('be.visible')
     cy.wait(2500) // Pausa más larga para ver la página inicial
   })
