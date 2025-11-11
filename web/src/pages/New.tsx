@@ -2,10 +2,10 @@ import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchJSON } from '../services/api';
 import '../styles/formulario.css'; 
+
 type NuevaLicitacionForm = {
   titulo: string;
   descripcion: string;
-  estado: 'Abierta' | 'En_revision' | 'Cerrada';
   fecha_cierre: string;
 };
 
@@ -15,7 +15,6 @@ export default function NewPage() {
   const [form, setForm] = useState<NuevaLicitacionForm>({
     titulo: '',
     descripcion: '',
-    estado: 'Abierta',
     fecha_cierre: ''
   });
 
@@ -54,8 +53,7 @@ export default function NewPage() {
         const formData = new FormData();
         formData.append('titulo', form.titulo);
         formData.append('descripcion', form.descripcion);
-        formData.append('estado', form.estado);
-        formData.append('fecha_cierre', form.fecha_cierre); // ✅ Usar snake_case como espera el backend
+        formData.append('fecha_cierre', form.fecha_cierre);
         formData.append('pdf', pdfInputRef.current.files[0]);
         
         // Obtener token de localStorage
@@ -80,8 +78,7 @@ export default function NewPage() {
         const licitacionData = {
           titulo: form.titulo,
           descripcion: form.descripcion,
-          estado: form.estado,
-          fecha_cierre: form.fecha_cierre // ✅ Usar snake_case como espera el backend
+          fecha_cierre: form.fecha_cierre
         };
         
         const lic = await fetchJSON('/api/licitaciones', {
@@ -124,20 +121,6 @@ export default function NewPage() {
           required 
           minLength={10}
         />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="estado">Estado</label>
-        <select 
-          id="estado"
-          name="estado"
-          value={form.estado} 
-          onChange={handleInputChange}
-        >
-          <option value="Abierta">Abierta</option>
-          <option value="En_revision">En revisión</option>
-          <option value="Cerrada">Cerrada</option>
-        </select>
       </div>
 
       <div className="form-group">

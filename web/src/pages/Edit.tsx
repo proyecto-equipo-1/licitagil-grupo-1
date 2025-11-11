@@ -115,6 +115,35 @@ export default function EditPage() {
   const [removePdf, setRemovePdf] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
+  const descargarPlantilla = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/plantilla/descargar`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Error al descargar plantilla');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'plantilla-licitacion.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error al descargar plantilla:', error);
+      alert('Error al descargar la plantilla');
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetchJSON(`/api/licitaciones/${id}`).then((lic: Licitacion) => {
