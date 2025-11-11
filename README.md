@@ -54,6 +54,8 @@ LicitAgil es una **aplicación web moderna y completa** para la **gestión integ
 
 **[Ver Presentación de Entrega 1](https://www.canva.com/design/DAG1oRgOx4M/Jnn6sIy0O-3HwovlKxb9Yw/view?utm_content=DAG1oRgOx4M&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9ff4fbda48)**
 
+**[Ver Video de Entrega 2](https://youtu.be/bCjpXr6QRj0)**
+
 ---
 
 ## 👥 Integrantes del Equipo
@@ -61,8 +63,8 @@ LicitAgil es una **aplicación web moderna y completa** para la **gestión integ
 | Nombre | Email | GitHub |
 |--------|-------|--------|
 |  [Felipe Campaña] | [felipe.campana@usm.cl] | [@Petou21](https://github.com/Petou21) |
-|  [Javiera Osorio] | [email2@usm.cl] | [@javiwasabi](https://github.com/javiwasabi) |
-|  [Bruno Flores] | [email3@usm.cl] | [@nobruuu](https://github.com/nobruuu) |
+|  [Javiera Osorio] | [javiera.osoriom@usm.cl] | [@javiwasabi](https://github.com/javiwasabi) |
+|  [Bruno Flores] | [bruno.flores@usm.cl] | [@nobruuu](https://github.com/nobruuu) |
 
 ---
 
@@ -700,7 +702,7 @@ Todas las funcionalidades están documentadas como historias de usuario en JIRA 
 ---
 
 ### **🚀 Entrega 2 - CI/CD y Automatización**
-**Fecha**: Noviembre 2024
+**Fecha**: Noviembre 2025
 
 #### **Objetivos Cumplidos**
 - ✅ **Pipeline CI/CD Completo**: Jenkins configurado y operativo
@@ -738,12 +740,6 @@ Todas las funcionalidades están documentadas como historias de usuario en JIRA 
 ```
 GitHub Push → Jenkins Webhook → Build → Test → Security Scan → AWS Deploy
 ```
-
-#### **Entregables**
-- 📄 [Documento Entrega 2](./entregables/entrega2.md)
-- 📖 [CI/CD Documentation](./docs/CI_CD_DOCUMENTATION.md)
-- 🔧 [Jenkins Setup Guide](./docs/JENKINS_SETUP.md)
-- ✅ [Resumen Final](./docs/JENKINS_RESUMEN_FINAL.md)
 
 #### **Métricas Alcanzadas**
 | Métrica | Objetivo | Alcanzado |
