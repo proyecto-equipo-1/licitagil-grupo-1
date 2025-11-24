@@ -2,6 +2,7 @@
 const { Builder } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const firefox = require('selenium-webdriver/firefox');
+const edge = require('selenium-webdriver/edge');
 require('dotenv').config();
 
 class WebDriverManager {
@@ -10,7 +11,7 @@ class WebDriverManager {
     this.baseUrl = process.env.BASE_URL || 'http://localhost:5173';
     this.apiUrl = process.env.API_URL || 'http://localhost:3000';
     this.headless = process.env.HEADLESS === 'true';
-    this.browser = process.env.BROWSER || 'chrome';
+    this.browser = process.env.BROWSER || 'edge';
     this.timeout = parseInt(process.env.TIMEOUT) || 30000;
   }
 
@@ -34,7 +35,6 @@ class WebDriverManager {
         break;
 
       case 'chrome':
-      default:
         options = new chrome.Options();
         if (this.headless) {
           options.addArguments('--headless');
@@ -49,6 +49,25 @@ class WebDriverManager {
         this.driver = await new Builder()
           .forBrowser('chrome')
           .setChromeOptions(options)
+          .build();
+        break;
+
+      case 'edge':
+      default:
+        options = new edge.Options();
+        if (this.headless) {
+          options.addArguments('--headless');
+        }
+        options.addArguments('--no-sandbox');
+        options.addArguments('--disable-dev-shm-usage');
+        options.addArguments('--disable-gpu');
+        options.addArguments('--window-size=1920,1080');
+        options.addArguments('--disable-web-security');
+        options.addArguments('--allow-running-insecure-content');
+        
+        this.driver = await new Builder()
+          .forBrowser('MicrosoftEdge')
+          .setEdgeOptions(options)
           .build();
         break;
     }

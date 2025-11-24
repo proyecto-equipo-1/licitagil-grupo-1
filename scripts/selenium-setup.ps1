@@ -4,7 +4,7 @@
 
 param(
     [string]$Action = "setup",
-    [string]$Browser = "chrome", 
+    [string]$Browser = "edge", 
     [switch]$Headless = $false,
     [switch]$Visible = $false,
     [switch]$Help = $false
@@ -169,7 +169,7 @@ function Install-Dependencies {
 }
 
 function Set-Environment {
-    param([string]$BrowserType = "chrome", [bool]$IsHeadless = $false)
+    param([string]$BrowserType = "edge", [bool]$IsHeadless = $false)
     
     Write-ColorOutput "Configurando variables de entorno..." $Cyan
     
