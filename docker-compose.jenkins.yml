@@ -1,0 +1,62 @@
+# 🚀 Docker Compose para Jenkins con Selenium
+version: '3.8'
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.jenkins
+    container_name: licitagil-jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Montar el código fuente para desarrollo
+      - .:/workspace
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+      - JAVA_OPTS=-Xmx2048m -Djenkins.install.runSetupWizard=false
+      - DISPLAY=:99
+      # Variables para Selenium
+      - BROWSER=chrome
+      - HEADLESS=true
+      - BASE_URL=http://host.docker.internal:5173
+      - API_URL=http://host.docker.internal:3000
+    networks:
+      - licitagil-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Servicio auxiliar para ngrok (opcional)
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: licitagil-ngrok
+    restart: unless-stopped
+    command: 
+      - "tunnel"
+      - "--label"
+      - "edge=edghts_2hcX7L7zQu3sWiM3ULPJ8hvDpq4"
+      - "http://jenkins:8080"
+    ports:
+      - "4040:4040"  # Web UI de ngrok
+    depends_on:
+      - jenkins
+    networks:
+      - licitagil-network
+    environment:
+      - NGROK_AUTHTOKEN=35wW0q1QTRXfRfohBu2L6vqNqOz_UYsBGXtKD9VureRpNyNZ
+
+volumes:
+  jenkins_home:
+    driver: local
+
+networks:
+  licitagil-network:
+    driver: bridge

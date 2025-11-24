@@ -1,0 +1,65 @@
+# 🐳 Jenkins con Node.js y Chrome para Selenium
+FROM jenkins/jenkins:lts
+
+# Cambiar a usuario root para instalaciones
+USER root
+
+# Variables de entorno
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NODE_VERSION=18
+ENV CHROME_VERSION=stable
+
+# Actualizar el sistema
+RUN apt-get update -qq && \
+    apt-get install -y \
+    curl \
+    wget \
+    gnupg \
+    software-properties-common \
+    xvfb \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm@latest
+
+# Instalar Google Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update -qq && \
+    apt-get install -y google-chrome-stable
+
+# Instalar ChromeDriver
+RUN CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
+    wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip && \
+    unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ && \
+    chmod +x /usr/local/bin/chromedriver && \
+    rm /tmp/chromedriver.zip
+
+# Crear script de inicio de Xvfb
+RUN echo '#!/bin/bash\n\
+export DISPLAY=:99\n\
+Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &\n\
+exec "$@"' > /usr/local/bin/start-xvfb && \
+    chmod +x /usr/local/bin/start-xvfb
+
+# Verificar instalaciones
+RUN echo "🔍 Verificando instalaciones..." && \
+    node --version && \
+    npm --version && \
+    google-chrome --version && \
+    chromedriver --version
+
+# Configurar Jenkins para usar Xvfb
+ENV DISPLAY=:99
+
+# Volver al usuario jenkins
+USER jenkins
+
+# Configurar plugins de Jenkins (opcional)
+# RUN jenkins-plugin-cli --plugins pipeline-stage-view workflow-aggregator git github
+
+# Punto de entrada personalizado
+ENTRYPOINT ["/usr/local/bin/start-xvfb", "/usr/local/bin/jenkins.sh"]
