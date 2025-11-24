@@ -57,16 +57,6 @@
     ],
     "collectCoverage": false,
     "verbose": true,
-    "reporters": [
-      "default",
-      ["allure-jest", {
-        "resultsDir": "allure-results",
-        "environmentInfo": {
-          "Browser": "Chrome/Firefox",
-          "Application": "LicitAgil",
-          "Environment": "Test"
-        }
-      }]
-    ]
+    "reporters": ["default"]
   }
 }
