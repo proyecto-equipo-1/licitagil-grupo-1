@@ -9,9 +9,12 @@ pipeline {
     BASE_URL       = 'http://localhost:5173'
     API_URL        = 'http://localhost:3000'
     // Selenium Configuration
-    SELENIUM_BROWSER = 'edge'
+    SELENIUM_BROWSER = 'chrome'
     SELENIUM_HEADLESS = 'true'
     DISPLAY = ':99'
+    // Node.js Configuration
+    NODE_VERSION = '18'
+    NODE_OPTIONS = '--max-old-space-size=4096'
   }
 
   options {
@@ -33,23 +36,100 @@ pipeline {
           echo "Environment: ${env.DEPLOY_ENV}"
           echo "=========================================="
           
-          // Verificar herramientas disponibles en Jenkins
+          // Instalar Node.js y npm en Jenkins
           sh '''
-            echo "🔧 Verificando entorno Jenkins..."
+            echo "🔧 Configurando entorno Jenkins..."
             
-            echo "📋 Sistema:"
+            echo "📋 Sistema base:"
             whoami
             pwd
-            ls -la
             
-            echo "📋 Herramientas disponibles:"
-            which git && git --version || echo "Git: no disponible"
-            which java && java -version || echo "Java: no disponible"
-            which python3 && python3 --version || echo "Python3: no disponible"
-            which node && node --version || echo "Node.js: no disponible"
-            which npm && npm --version || echo "npm: no disponible"
+            echo "📦 Instalando Node.js y npm..."
             
-            echo "✅ Verificación completada"
+            # Detectar distribución Linux
+            if [ -f /etc/debian_version ]; then
+              echo "🐧 Detectado: Debian/Ubuntu"
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update -qq
+              apt-get install -y curl wget gnupg software-properties-common
+              
+              # Instalar Node.js
+              curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+              apt-get install -y nodejs
+              
+              # Instalar Google Chrome
+              echo "📦 Instalando Google Chrome..."
+              wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+              echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
+              apt-get update -qq
+              apt-get install -y google-chrome-stable
+              
+            elif [ -f /etc/redhat-release ]; then
+              echo "🎩 Detectado: RedHat/CentOS"
+              curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+              yum install -y nodejs npm
+              
+              # Instalar Google Chrome
+              echo "📦 Instalando Google Chrome..."
+              yum install -y wget
+              wget -q -O /tmp/google-chrome.rpm https://dl.google.com/linux/chrome/rpm/stable/x86_64/google-chrome-stable-current.x86_64.rpm
+              yum localinstall -y /tmp/google-chrome.rpm
+              
+            elif [ -f /etc/alpine-release ]; then
+              echo "🏔️ Detectado: Alpine Linux"
+              apk add --no-cache nodejs npm chromium
+              echo "✅ Usando Chromium en Alpine Linux"
+              
+            else
+              echo "⚠️ Distribución desconocida, intentando instalación genérica..."
+              # Usar Node Version Manager como fallback
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+              nvm install --lts
+              nvm use --lts
+            fi
+            
+            echo "🔍 Verificando instalación..."
+            node --version || echo "❌ Node.js no se instaló"
+            npm --version || echo "❌ npm no se instaló"
+            
+            echo "✅ Configuración completada"
+          '''
+        }
+      }
+    }
+
+    stage('Install System Dependencies') {
+      steps {
+        script {
+          sh '''
+            echo "🔧 Instalando dependencias del sistema..."
+            
+            # Instalar herramientas básicas
+            if [ -f /etc/debian_version ]; then
+              apt-get update -qq
+              apt-get install -y curl wget git unzip xvfb
+              
+              # Instalar Microsoft Edge para Linux
+              echo "📦 Instalando Microsoft Edge..."
+              curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-edge.gpg
+              echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft-edge.gpg] https://packages.microsoft.com/repos/edge stable main" | tee /etc/apt/sources.list.d/microsoft-edge.list
+              apt-get update -qq
+              apt-get install -y microsoft-edge-stable || echo "⚠️ Edge no se pudo instalar"
+              
+            elif [ -f /etc/alpine-release ]; then
+              apk add --no-cache curl wget git unzip xvfb-run chromium
+              echo "⚠️ Edge no disponible en Alpine, usando Chromium como fallback"
+            fi
+            
+            # Configurar Xvfb para headless
+            echo "🖥️ Configurando display virtual..."
+            export DISPLAY=:99
+            Xvfb :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset &
+            sleep 2
+            
+            echo "✅ Dependencias del sistema instaladas"
           '''
         }
       }
@@ -62,8 +142,13 @@ pipeline {
             dir('api') {
               sh '''
                 echo "📦 Instalando dependencias de API..."
+                
+                # Verificar Node.js
+                node --version || exit 1
+                npm --version || exit 1
+                
                 if [ -f "package.json" ]; then
-                  npm install --production
+                  npm ci --only=production --silent || npm install --production --silent
                   echo "✅ API dependencies instaladas"
                 else
                   echo "⚠️ No package.json encontrado en API"
@@ -77,8 +162,13 @@ pipeline {
             dir('web') {
               sh '''
                 echo "🌐 Instalando dependencias de Web..."
+                
+                # Verificar Node.js
+                node --version || exit 1
+                npm --version || exit 1
+                
                 if [ -f "package.json" ]; then
-                  npm install --production
+                  npm ci --only=production --silent || npm install --production --silent
                   echo "✅ Web dependencies instaladas"
                 else
                   echo "⚠️ No package.json encontrado en Web"
@@ -92,10 +182,15 @@ pipeline {
             dir('selenium-tests') {
               sh '''
                 echo "🧪 Instalando dependencias de Selenium..."
+                
+                # Verificar Node.js
+                node --version || exit 1
+                npm --version || exit 1
+                
                 if [ -f "package.json" ]; then
-                  npm install
+                  npm ci --silent || npm install --silent
                   echo "🔧 Configurando WebDrivers..."
-                  npm run setup:drivers || echo "⚠️ Setup de drivers falló"
+                  npm run setup:drivers || echo "⚠️ Setup de drivers falló - continuando..."
                   echo "✅ Selenium dependencies instaladas"
                 else
                   echo "⚠️ No package.json encontrado en Selenium"
@@ -201,21 +296,41 @@ pipeline {
                   echo "Browser: ${SELENIUM_BROWSER}"
                   echo "Headless: ${SELENIUM_HEADLESS}"
                   echo "Base URL: ${BASE_URL}"
+                  echo "Display: ${DISPLAY}"
                   echo "=========================================="
                   
                   # Configurar variables de entorno para Selenium
-                  export BROWSER=${SELENIUM_BROWSER}
+                  export BROWSER=chrome  # Usar Chrome en Linux en lugar de Edge
                   export HEADLESS=${SELENIUM_HEADLESS}
                   export BASE_URL=${BASE_URL}
                   export CI=true
+                  export DISPLAY=${DISPLAY}
+                  
+                  # Instalar ChromeDriver si no existe
+                  if ! command -v chromedriver &> /dev/null; then
+                    echo "📦 Instalando ChromeDriver..."
+                    npm install chromedriver --silent || echo "⚠️ ChromeDriver install falló"
+                  fi
+                  
+                  # Verificar Chrome
+                  if command -v google-chrome &> /dev/null; then
+                    echo "✅ Chrome encontrado: $(google-chrome --version)"
+                  elif command -v chromium &> /dev/null; then
+                    echo "✅ Chromium encontrado: $(chromium --version)"
+                    export BROWSER=chromium
+                  else
+                    echo "⚠️ No se encontró Chrome ni Chromium"
+                  fi
                   
                   # Ejecutar tests de smoke específicamente
                   echo "🚀 Ejecutando Smoke Tests..."
-                  npm run test:smoke || {
+                  npm run test:smoke:ci 2>&1 || {
                     echo "❌ Smoke tests fallaron"
                     echo "📋 Logs de aplicación:"
-                    cat ../api.log | tail -20 || echo "No hay logs de API"
-                    cat ../web.log | tail -20 || echo "No hay logs de Web"
+                    cat ../api.log | tail -20 2>/dev/null || echo "No hay logs de API"
+                    cat ../web.log | tail -20 2>/dev/null || echo "No hay logs de Web"
+                    echo "📋 Screenshots disponibles:"
+                    ls -la screenshots/ 2>/dev/null || echo "No hay screenshots"
                     exit 1
                   }
                   
@@ -250,18 +365,20 @@ pipeline {
                   echo "=========================================="
                   
                   # Configurar variables de entorno
-                  export BROWSER=${SELENIUM_BROWSER}
+                  export BROWSER=chrome  # Usar Chrome en Linux
                   export HEADLESS=${SELENIUM_HEADLESS}
                   export BASE_URL=${BASE_URL}
                   export CI=true
+                  export DISPLAY=${DISPLAY}
                   
                   # Ejecutar tests básicos
                   echo "🚀 Ejecutando Basic Tests..."
-                  npm run test:basic || {
+                  npm run test:basic:ci 2>&1 || {
                     echo "❌ Basic tests fallaron, continuando..."
+                    ls -la screenshots/ 2>/dev/null || echo "No screenshots generados"
                   }
                   
-                  echo "✅ Selenium Basic Tests completados"
+                  echo "✅ Selenium Basic Tests procesados"
                 '''
               }
             }
