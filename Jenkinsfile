@@ -29,26 +29,40 @@ pipeline {
           echo "Environment: ${env.DEPLOY_ENV}"
           echo "=========================================="
           
-          // Verificar Node.js y herramientas
+          // Instalar Node.js y herramientas necesarias
           sh '''
-            echo "Verificando herramientas..."
+            echo "🔧 Instalando herramientas necesarias..."
+            
+            # Actualizar repositorios
+            apt-get update -qq
+            
+            # Instalar curl si no existe
+            apt-get install -y curl
+            
+            # Instalar Node.js 20 LTS
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
+            
+            echo "✅ Verificando instalación..."
             node --version
             npm --version
-            echo "✅ Node.js disponible"
+            echo "✅ Node.js instalado correctamente"
           '''
           
-          // Instalar AWS CLI si no existe
+          // Instalar herramientas adicionales
           sh '''
-            which aws || (
-              echo "Instalando AWS CLI..."
-              pip3 install awscli || echo "AWS CLI ya instalado o no disponible"
-            )
-          '''
-          
-          // Instalar Amplify CLI
-          sh '''
-            echo "Instalando Amplify CLI..."
-            npm install -g @aws-amplify/cli || echo "Amplify CLI ya instalado"
+            echo "📦 Instalando herramientas adicionales..."
+            
+            # Instalar AWS CLI
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" || true
+            apt-get install -y unzip || true
+            unzip awscliv2.zip || true
+            ./aws/install || echo "AWS CLI ya instalado"
+            
+            # Instalar Amplify CLI
+            npm install -g @aws-amplify/cli || echo "Amplify CLI instalado"
+            
+            echo "✅ Herramientas configuradas"
           '''
         }
       }
