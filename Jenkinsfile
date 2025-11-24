@@ -30,7 +30,7 @@ pipeline {
           echo "=========================================="
           
           // Verificar Node.js y herramientas
-          bat '''
+          sh '''
             echo "Verificando herramientas..."
             node --version
             npm --version
@@ -38,15 +38,15 @@ pipeline {
           '''
           
           // Instalar AWS CLI si no existe
-          bat '''
-            where aws || (
+          sh '''
+            which aws || (
               echo "Instalando AWS CLI..."
-              pip install awscli || echo "AWS CLI ya instalado o no disponible"
+              pip3 install awscli || echo "AWS CLI ya instalado o no disponible"
             )
           '''
           
           // Instalar Amplify CLI
-          bat '''
+          sh '''
             echo "Instalando Amplify CLI..."
             npm install -g @aws-amplify/cli || echo "Amplify CLI ya instalado"
           '''
@@ -59,10 +59,10 @@ pipeline {
         script {
           echo "📦 Instalando dependencias..."
           dir('api') {
-            bat 'npm install --legacy-peer-deps || echo "API deps instaladas"'
+            sh 'npm install --legacy-peer-deps || echo "API deps instaladas"'
           }
           dir('web') {
-            bat 'npm install --legacy-peer-deps || echo "Web deps instaladas"'
+            sh 'npm install --legacy-peer-deps || echo "Web deps instaladas"'
           }
         }
       }
@@ -75,7 +75,7 @@ pipeline {
             script {
               echo "🏗️ Compilando API..."
               dir('api') {
-                bat 'npm run build || echo "Build API completado"'
+                sh 'npm run build || echo "Build API completado"'
               }
             }
           }
@@ -85,7 +85,7 @@ pipeline {
             script {
               echo "🌐 Compilando Web..."
               dir('web') {
-                bat 'npm run build || echo "Build Web completado"'
+                sh 'npm run build || echo "Build Web completado"'
               }
             }
           }
@@ -95,8 +95,8 @@ pipeline {
             script {
               echo "🧪 Configurando Selenium Tests..."
               dir('selenium-tests') {
-                bat 'npm install --legacy-peer-deps || echo "Selenium deps instaladas"'
-                bat 'npm run setup || echo "WebDrivers configurados"'
+                sh 'npm install --legacy-peer-deps || echo "Selenium deps instaladas"'
+                sh 'npm run setup || echo "WebDrivers configurados"'
               }
             }
           }
@@ -111,7 +111,7 @@ pipeline {
             script {
               echo "🌲 Configuración Cypress E2E..."
               dir('web') {
-                bat '''
+                sh '''
                   echo "🌲 Cypress configurado correctamente"
                   echo "   Tests disponibles para ejecución local"
                   echo "   Para ejecutar: npm run cypress:run"
@@ -126,7 +126,7 @@ pipeline {
             script {
               echo "🧪 Configuración Selenium E2E..."
               dir('selenium-tests') {
-                bat '''
+                sh '''
                   echo "🧪 Selenium configurado correctamente"
                   echo "   WebDrivers instalados: Chrome, Firefox"
                   echo "   Tests disponibles: smoke, crud, search"
