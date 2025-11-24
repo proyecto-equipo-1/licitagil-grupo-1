@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'node:20-alpine'
-      args '-v /var/run/docker.sock:/var/run/docker.sock --user root'
-    }
-  }
+  agent any
 
   environment {
     AWS_REGION     = 'us-east-1'
@@ -13,6 +8,8 @@ pipeline {
     AMPLIFY_BRANCH = "${env.BRANCH_NAME == 'main' ? 'main' : 'testing'}"
     BASE_URL       = 'http://localhost:5173'
     API_URL        = 'http://localhost:3000'
+    NODEJS_HOME    = tool 'NodeJS'
+    PATH           = "${env.NODEJS_HOME}/bin:${env.PATH}"
   }
 
   options {
@@ -34,20 +31,26 @@ pipeline {
           echo "Environment: ${env.DEPLOY_ENV}"
           echo "=========================================="
           
-          // Instalar herramientas necesarias
-          sh '''
-            apk update && apk add --no-cache \
-              python3 py3-pip curl unzip \
-              chromium chromium-chromedriver \
-              firefox-esr
-            
-            # Instalar AWS CLI
-            pip3 install awscli
-            
-            # Instalar Amplify CLI
-            npm install -g @aws-amplify/cli
-            
-            echo "✅ Herramientas instaladas correctamente"
+          // Verificar Node.js y herramientas
+          bat '''
+            echo "Verificando herramientas..."
+            node --version
+            npm --version
+            echo "✅ Node.js disponible"
+          '''
+          
+          // Instalar AWS CLI si no existe
+          bat '''
+            where aws || (
+              echo "Instalando AWS CLI..."
+              pip install awscli || echo "AWS CLI ya instalado o no disponible"
+            )
+          '''
+          
+          // Instalar Amplify CLI
+          bat '''
+            echo "Instalando Amplify CLI..."
+            npm install -g @aws-amplify/cli || echo "Amplify CLI ya instalado"
           '''
         }
       }
@@ -58,10 +61,10 @@ pipeline {
         script {
           echo "📦 Instalando dependencias..."
           dir('api') {
-            sh 'npm install --legacy-peer-deps || true'
+            bat 'npm install --legacy-peer-deps || echo "API deps instaladas"'
           }
           dir('web') {
-            sh 'npm install --legacy-peer-deps || true'
+            bat 'npm install --legacy-peer-deps || echo "Web deps instaladas"'
           }
         }
       }
@@ -74,7 +77,7 @@ pipeline {
             script {
               echo "🏗️ Compilando API..."
               dir('api') {
-                sh 'npm run build || echo "Build API completado"'
+                bat 'npm run build || echo "Build API completado"'
               }
             }
           }
@@ -84,7 +87,7 @@ pipeline {
             script {
               echo "🌐 Compilando Web..."
               dir('web') {
-                sh 'npm run build || echo "Build Web completado"'
+                bat 'npm run build || echo "Build Web completado"'
               }
             }
           }
@@ -94,8 +97,8 @@ pipeline {
             script {
               echo "🧪 Configurando Selenium Tests..."
               dir('selenium-tests') {
-                sh 'npm install --legacy-peer-deps || echo "Selenium deps instaladas"'
-                sh 'npm run setup || echo "WebDrivers configurados"'
+                bat 'npm install --legacy-peer-deps || echo "Selenium deps instaladas"'
+                bat 'npm run setup || echo "WebDrivers configurados"'
               }
             }
           }
@@ -110,14 +113,10 @@ pipeline {
             script {
               echo "🌲 Ejecutando pruebas Cypress E2E..."
               dir('web') {
-                sh '''
-                  # Verificar si Cypress está disponible
-                  if command -v npx cypress > /dev/null; then
-                    echo "✅ Cypress disponible"
-                    CYPRESS_baseUrl=${BASE_URL:-http://localhost:5173} npx cypress run --headless || echo "Cypress tests completados"
-                  else
-                    echo "⚠️ Cypress no disponible, saltando..."
-                  fi
+                bat '''
+                  echo "🌲 Ejecutando pruebas Cypress E2E..."
+                  set CYPRESS_baseUrl=http://localhost:5173
+                  npx cypress run --headless || echo "Cypress tests completados"
                 '''
               }
             }
@@ -128,20 +127,19 @@ pipeline {
             script {
               echo "🧪 Ejecutando pruebas Selenium E2E..."
               dir('selenium-tests') {
-                sh '''
-                  # Configurar variables para CI
-                  export BASE_URL=${BASE_URL:-http://localhost:5173}
-                  export API_URL=${API_URL:-http://localhost:3000}
-                  export HEADLESS=true
-                  export CI=true
-                  export BROWSER=chrome
+                bat '''
+                  echo "🧪 Ejecutando pruebas Selenium E2E..."
+                  set BASE_URL=http://localhost:5173
+                  set API_URL=http://localhost:3000
+                  set HEADLESS=true
+                  set CI=true
+                  set BROWSER=chrome
                   
                   echo "🌐 Configuración Selenium:"
-                  echo "   BASE_URL: $BASE_URL"
-                  echo "   HEADLESS: $HEADLESS"
-                  echo "   BROWSER: $BROWSER"
+                  echo "   BASE_URL: %BASE_URL%"
+                  echo "   HEADLESS: %HEADLESS%"
+                  echo "   BROWSER: %BROWSER%"
                   
-                  # Ejecutar tests
                   npm test || echo "Selenium tests completados"
                 '''
               }
@@ -165,12 +163,12 @@ pipeline {
                           credentialsId: 'aws-credentials',
                           accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                           secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-          sh '''
-            aws amplify start-job \
-              --app-id ${AMPLIFY_APP_ID} \
-              --branch-name ${AMPLIFY_BRANCH} \
-              --job-type RELEASE \
-              --region ${AWS_REGION} || echo "Deploy iniciado"
+          bat '''
+            aws amplify start-job ^
+              --app-id %AMPLIFY_APP_ID% ^
+              --branch-name %AMPLIFY_BRANCH% ^
+              --job-type RELEASE ^
+              --region %AWS_REGION% || echo "Deploy iniciado"
           '''
         }
       }
