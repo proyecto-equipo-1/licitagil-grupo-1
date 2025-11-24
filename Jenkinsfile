@@ -1,11 +1,18 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      image 'node:20-alpine'
+      args '-v /var/run/docker.sock:/var/run/docker.sock --user root'
+    }
+  }
 
   environment {
     AWS_REGION     = 'us-east-1'
     AMPLIFY_APP_ID = 'd386d94bix0hzl'
     DEPLOY_ENV     = "${env.BRANCH_NAME == 'main' ? 'production' : 'testing'}"
     AMPLIFY_BRANCH = "${env.BRANCH_NAME == 'main' ? 'main' : 'testing'}"
+    BASE_URL       = 'http://localhost:5173'
+    API_URL        = 'http://localhost:3000'
   }
 
   options {
@@ -16,7 +23,7 @@ pipeline {
 
   stages {
 
-    stage('Setup') {
+    stage('Setup Environment') {
       steps {
         script {
           echo "=========================================="
@@ -26,6 +33,22 @@ pipeline {
           echo "Build: #${env.BUILD_NUMBER}"
           echo "Environment: ${env.DEPLOY_ENV}"
           echo "=========================================="
+          
+          // Instalar herramientas necesarias
+          sh '''
+            apk update && apk add --no-cache \
+              python3 py3-pip curl unzip \
+              chromium chromium-chromedriver \
+              firefox-esr
+            
+            # Instalar AWS CLI
+            pip3 install awscli
+            
+            # Instalar Amplify CLI
+            npm install -g @aws-amplify/cli
+            
+            echo "✅ Herramientas instaladas correctamente"
+          '''
         }
       }
     }
