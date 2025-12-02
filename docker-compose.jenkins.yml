@@ -25,6 +25,9 @@ services:
       - HEADLESS=true
       - BASE_URL=http://host.docker.internal:5173
       - API_URL=http://host.docker.internal:3000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/licitagil
+    depends_on:
+      - postgres
     networks:
       - licitagil-network
     healthcheck:
@@ -51,6 +54,24 @@ services:
       - licitagil-network
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: licitagil-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=licitagil
+    ports:
+      - "5432:5432"
+    networks:
+      - licitagil-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   jenkins_home:

@@ -13,6 +13,7 @@ pipeline {
         // URLs de tu app
         BASE_URL          = 'http://localhost:5173'
         API_URL           = 'http://localhost:3000'
+        DATABASE_URL      = 'postgresql://postgres:postgres@postgres:5432/licitagil'
     }
 
     options {
@@ -52,6 +53,15 @@ pipeline {
                     // Build (si tienes scripts de build)
                     dir('api') { sh 'npm run build --if-present' }
                     dir('web') { sh 'npm run build --if-present' }
+
+                    // Preparar Base de Datos
+                    dir('api') {
+                        echo "🗄️ Preparando Base de Datos..."
+                        // Esperar a que Postgres esté listo
+                        sleep 5
+                        sh 'npx prisma migrate dev --name init'
+                        sh 'npx prisma db seed'
+                    }
 
                     // Start en background (usando nohup)
                     // Usamos sleep para darles tiempo de arrancar
