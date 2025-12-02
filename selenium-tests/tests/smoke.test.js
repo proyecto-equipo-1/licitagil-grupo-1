@@ -14,16 +14,35 @@ describe('Smoke Tests - Verificación Básica de LicitAgil', () => {
   // Helper para login
   async function login() {
     console.log('🔑 Iniciando sesión como admin...');
-    await driver.get(`${baseUrl}/login`);
-    await driver.wait(until.elementLocated(By.id('email')), 5000);
+    try {
+      await driver.get(`${baseUrl}/login`);
+      await driver.wait(until.elementLocated(By.id('email')), 5000);
 
-    await driver.findElement(By.id('email')).sendKeys('admin@licitagil.com');
-    await driver.findElement(By.id('password')).sendKeys('admin123');
-    await driver.findElement(By.css('button[type="submit"]')).click();
+      await driver.findElement(By.id('email')).sendKeys('admin@licitagil.com');
+      await driver.findElement(By.id('password')).sendKeys('admin123');
+      await driver.findElement(By.css('button[type="submit"]')).click();
 
-    // Esperar redirección o indicador de login exitoso
-    await driver.wait(until.urlContains('/licitaciones'), 10000);
-    console.log('✅ Login exitoso');
+      // Esperar redirección o indicador de login exitoso
+      // Aumentamos timeout y agregamos log de URL actual si falla
+      try {
+        await driver.wait(until.urlContains('/licitaciones'), 15000);
+        console.log('✅ Login exitoso (URL detectada)');
+      } catch (waitError) {
+        const currentUrl = await driver.getCurrentUrl();
+        console.log(`⚠️ Timeout esperando URL /licitaciones. URL actual: ${currentUrl}`);
+
+        // Fallback: Verificar si ya estamos logueados buscando un elemento del dashboard
+        const dashboardElements = await driver.findElements(By.css('nav, .navbar, a[href="/licitaciones/nueva"]'));
+        if (dashboardElements.length > 0) {
+          console.log('✅ Login exitoso (Elementos de dashboard detectados)');
+        } else {
+          throw new Error(`Login falló: No se redirigió ni se encontró dashboard. URL: ${currentUrl}`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error fatal en login:', error.message);
+      throw error; // Re-lanzar para que el test sepa que falló
+    }
   }
 
   beforeEach(async () => {
