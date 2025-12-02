@@ -1,0 +1,82 @@
+# 🚀 Docker Compose para Jenkins con Selenium
+version: '3.8'
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: licitagil-jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Montar el código fuente para desarrollo
+      - .:/workspace
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+      - JAVA_OPTS=-Xmx2048m -Djenkins.install.runSetupWizard=false
+      - DISPLAY=:99
+      # Variables para Selenium
+      - BROWSER=chrome
+      - HEADLESS=true
+      - BASE_URL=http://host.docker.internal:5173
+      - API_URL=http://host.docker.internal:3000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/licitagil
+    depends_on:
+      - postgres
+    networks:
+      - licitagil-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Servicio auxiliar para ngrok
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: licitagil-ngrok
+    restart: unless-stopped
+    command: 
+      - "http"
+      - "--domain=${NGROK_DOMAIN:-}"
+      - "http://jenkins:8080"
+    ports:
+      - "4040:4040"  # Web UI de ngrok
+    depends_on:
+      - jenkins
+    networks:
+      - licitagil-network
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: licitagil-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=licitagil
+    ports:
+      - "5432:5432"
+    networks:
+      - licitagil-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  jenkins_home:
+    driver: local
+
+networks:
+  licitagil-network:
+    driver: bridge

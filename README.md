@@ -113,7 +113,10 @@ LicitAgil es una **aplicación web moderna y completa** para la **gestión integ
 - **Docker** - Contenedorización para desarrollo consistente
 
 ### **Testing & Quality**
-- **Cypress** - Framework de pruebas End-to-End
+- **Cypress** - Framework de pruebas End-to-End avanzado
+- **Selenium WebDriver** - Automatización multi-navegador E2E
+- **Jest** - Framework de testing para Selenium tests
+- **Allure Reports** - Reportes interactivos de pruebas
 - **Zod** - Validación de schemas en runtime
 - **ESLint** - Linting para JavaScript/TypeScript
 - **npm audit** - Escaneo de vulnerabilidades de seguridad
@@ -532,6 +535,44 @@ Ver **[INDEX_AWS_DOCS.md](./docs/INDEX_AWS_DOCS.md)** para guías paso a paso.
 
 ## 🧪 Pruebas Automatizadas
 
+### **Selenium WebDriver (E2E Testing Multi-navegador)**
+
+**Configuración de Testing con Selenium:**
+- ✅ Framework: **Selenium WebDriver 4.15** con **Jest**
+- ✅ Navegadores: Chrome, Firefox (multi-browser testing)
+- ✅ Reportes: Allure Reports con screenshots automáticos
+- ✅ Integración: Jenkins CI/CD Pipeline
+
+**Inicio rápido:**
+```powershell
+# Setup completo (Windows)
+.\scripts\selenium-setup.ps1 setup
+
+# Ejecutar todas las pruebas
+.\scripts\selenium-setup.ps1 test
+
+# Ejecutar pruebas específicas
+.\scripts\selenium-setup.ps1 test:smoke
+.\scripts\selenium-setup.ps1 test:crud  
+.\scripts\selenium-setup.ps1 test:search
+```
+
+**Ejecutar pruebas (Linux/Mac):**
+```bash
+cd selenium-tests
+npm install
+npm test                    # Todas las pruebas
+npm run test:chrome        # Solo Chrome
+npm run test:firefox       # Solo Firefox
+npm run test:headless      # Modo sin interfaz
+```
+
+**Casos de prueba implementados:**
+- 🔥 **Smoke Tests**: Verificación básica de carga y navegación
+- 🔧 **CRUD Tests**: Ciclo completo Crear→Leer→Actualizar→Eliminar
+- 🔍 **Search Tests**: Búsqueda, filtros y combinaciones
+- 📱 **Responsive Tests**: Adaptabilidad móvil/tablet/desktop
+
 ### **Cypress (E2E Testing)**
 
 **Configuración de Testing con Cypress:**
@@ -557,7 +598,7 @@ npm run cypress:run
 
 **Estructura de pruebas:**
 ```
-web/cypress/
+web/cypress/                    # Cypress Tests
 ├── e2e/
 │   └── flujo-basico.cy.ts     # Test principal E2E
 ├── fixtures/
@@ -565,6 +606,17 @@ web/cypress/
 └── support/
     ├── commands.ts            # Comandos customizados
     └── e2e.ts                 # Configuración global
+
+selenium-tests/                 # Selenium Tests  
+├── tests/
+│   ├── smoke.test.js          # Tests básicos
+│   ├── crud-completo.test.js  # Tests CRUD
+│   └── busqueda-filtros.test.js # Tests búsqueda
+├── config/
+│   ├── webdriver.config.js    # Config WebDriver
+│   └── jest.setup.js          # Setup Jest
+├── screenshots/               # Capturas automáticas
+└── reports/                   # Reportes Allure
 ```
 
 ### **Estrategia de Pruebas**
@@ -640,6 +692,7 @@ La Wiki contiene documentación detallada sobre:
 - [📊 Índice Implementación](./docs/INDICE_IMPLEMENTACION.md) - Índice de documentación
 
 #### **Documentación de Testing**
+- [🧪 Selenium Integration](./docs/SELENIUM_INTEGRATION.md) - **NUEVO**: Integración Selenium WebDriver
 - [🧪 Ejecución de Tests](./docs/Ejecucion-de-test.md) - Guía de pruebas automatizadas
 - [📝 Testing Strategy](./docs/testing-strategy.md) - Estrategia de pruebas
 - [📄 Pruebas Validación PDF](./docs/PRUEBAS_VALIDACION_PDF.md) - Validación de documentos
