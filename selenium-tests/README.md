@@ -1,227 +1,95 @@
-# 🧪 Selenium Tests para LicitAgil
+# 🧪 LicitAgil - Pruebas E2E con Selenium
 
-Este directorio contiene las pruebas automatizadas End-to-End usando **Selenium WebDriver** para el proyecto LicitAgil.
+Este directorio contiene las pruebas automatizadas End-to-End (E2E) para el proyecto LicitAgil, utilizando Selenium WebDriver y Jest.
 
-## 🚀 Inicio Rápido
+## 📋 Requisitos Previos
 
-### 1. Instalación
+- **Node.js** (v16 o superior)
+- **Navegadores**: Google Chrome y/o Mozilla Firefox instalados.
+
+## 🚀 Instalación
+
+1. Navega al directorio de pruebas:
+   ```bash
+   cd selenium-tests
+   ```
+
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+
+3. Configura los drivers (esto verificará que tengas los drivers necesarios):
+   ```bash
+   npm run setup
+   ```
+
+## 🏃‍♂️ Ejecutar Pruebas
+
+### Comandos Principales
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm test` | Ejecuta **todas** las pruebas. |
+| `npm run test:smoke` | Ejecuta solo las pruebas de humo (verificación básica). |
+| `npm run test:headless` | Ejecuta pruebas sin abrir ventana del navegador (más rápido). |
+| `npm run test:visible` | Ejecuta pruebas viendo el navegador (útil para depurar). |
+| `npm run test:chrome` | Ejecuta solo en Chrome. |
+| `npm run test:firefox` | Ejecuta solo en Firefox. |
+
+### Ejecutar un archivo específico
+Puedes usar `jest` directamente o filtrar por nombre de archivo:
 ```bash
-cd selenium-tests
-npm install
+# Ejecutar solo el ejemplo
+npx jest tests/example.test.js
 ```
 
-### 2. Configuración
-```bash
-# Copiar variables de entorno
-cp .env.example .env
+## 📝 Cómo Añadir Nuevas Pruebas
 
-# Configurar WebDrivers
-npm run setup
-```
+1. **Crear archivo**: Crea un nuevo archivo en la carpeta `tests/` con la extensión `.test.js`.
+   - Ejemplo: `tests/mi-nueva-funcionalidad.test.js`
 
-### 3. Ejecutar Pruebas
-```bash
-# Todas las pruebas
-npm test
+2. **Usar la plantilla**: Puedes copiar el contenido de `tests/example.test.js` como base.
 
-# Pruebas específicas
-npm run test:smoke      # Verificación básica
-npm run test:crud       # Operaciones CRUD
-npm run test:search     # Búsqueda y filtros
+3. **Estructura Básica**:
 
-# Por navegador
-npm run test:chrome     # Solo Chrome
-npm run test:firefox    # Solo Firefox
-
-# Modo de ejecución
-npm run test:headless   # Sin interfaz gráfica
-npm run test:visible    # Con interfaz visible
-```
-
-## 📁 Estructura
-
-```
-selenium-tests/
-├── config/
-│   ├── webdriver.config.js    # Configuración WebDriver
-│   └── jest.setup.js          # Setup de Jest
-├── tests/
-│   ├── smoke.test.js          # Tests básicos
-│   ├── crud-completo.test.js  # Tests CRUD
-│   └── busqueda-filtros.test.js # Tests búsqueda
-├── screenshots/               # Capturas automáticas
-├── reports/                   # Reportes Allure
-├── package.json              # Dependencias
-├── .env                      # Variables de entorno
-└── setup-webdrivers.js      # Script de configuración
-```
-
-## 🧪 Tipos de Pruebas
-
-### 🔥 Smoke Tests
-- ✅ Verificación básica de carga
-- ✅ Elementos de navegación
-- ✅ Disponibilidad de API
-- ✅ Responsividad básica
-
-### 🔧 CRUD Tests
-- ✅ Crear nueva licitación
-- ✅ Leer/visualizar detalles
-- ✅ Actualizar información
-- ✅ Eliminar licitación
-
-### 🔍 Búsqueda y Filtros
-- ✅ Funcionalidad de búsqueda
-- ✅ Filtros por estado
-- ✅ Combinación de filtros
-- ✅ Manejo de "sin resultados"
-
-## ⚙️ Configuración
-
-### Variables de Entorno (.env)
-```bash
-# URLs de la aplicación
-BASE_URL=http://localhost:5173
-API_URL=http://localhost:3000
-
-# Configuración del navegador
-BROWSER=chrome          # chrome | firefox
-HEADLESS=false         # true para CI/CD
-
-# Timeouts
-TIMEOUT=30000          # 30 segundos
-```
-
-### Navegadores Soportados
-- ✅ **Chrome** (recomendado)
-- ✅ **Firefox**
-- 🔄 **Edge** (próximamente)
-
-## 📊 Reportes
-
-### Capturas de Pantalla
-- 📸 Automáticas en caso de fallo
-- 📁 Guardadas en `screenshots/`
-- 🏷️ Nombradas con timestamp
-
-### Reportes Allure
-```bash
-# Generar reporte
-npm run report
-
-# Ver reporte interactivo
-# Se abre automáticamente en el navegador
-```
-
-## 🚀 CI/CD Integration
-
-### Para Jenkins
-```groovy
-stage('Selenium Tests') {
-  steps {
-    dir('selenium-tests') {
-      sh 'npm install'
-      sh 'HEADLESS=true npm test'
-    }
-  }
-  post {
-    always {
-      publishHTML([
-        allowMissing: false,
-        alwaysLinkToLastBuild: true,
-        keepAll: true,
-        reportDir: 'selenium-tests/allure-report',
-        reportFiles: 'index.html',
-        reportName: 'Selenium Test Report'
-      ])
-      archiveArtifacts artifacts: 'selenium-tests/screenshots/**/*.png'
-    }
-  }
-}
-```
-
-### Variables de Entorno CI/CD
-```bash
-export BASE_URL="https://testing.d386d94bix0hzl.amplifyapp.com"
-export HEADLESS=true
-export BROWSER=chrome
-export CI=true
-```
-
-## 🐛 Troubleshooting
-
-### Chrome WebDriver
-```bash
-# Si falla Chrome
-npm install chromedriver --save-dev
-# o actualizar Chrome browser
-```
-
-### Firefox WebDriver
-```bash
-# Si falla Firefox
-npm install geckodriver --save-dev
-# o instalar Firefox: https://www.mozilla.org/firefox/
-```
-
-### Timeouts
-```bash
-# Aumentar timeout para conexiones lentas
-export TIMEOUT=60000
-```
-
-### Headless Mode
-```bash
-# Para debugging, usar modo visible
-export HEADLESS=false
-```
-
-## 📈 Mejores Prácticas
-
-### ✅ Tests Implementadas
-- **Aislamiento**: Cada test es independiente
-- **Cleanup**: Datos de prueba se limpian automáticamente
-- **Screenshots**: Capturas automáticas en fallos
-- **Esperas Explícitas**: Uso de `driver.wait()` en lugar de `sleep()`
-- **Selectores Flexibles**: Múltiples estrategias de localización
-
-### 🔄 Mantenimiento
-- Tests adaptativos a cambios de UI
-- Logging detallado para debugging
-- Manejo robusto de errores
-- Verificaciones no destructivas
-
-## 🤝 Contribuir
-
-### Agregar Nuevos Tests
-1. Crear archivo en `tests/nuevo-test.test.js`
-2. Seguir patrón de tests existentes
-3. Usar `describe` y `test` de Jest
-4. Agregar logging con `console.log()`
-
-### Ejemplo de Test
 ```javascript
-describe('Mi Nueva Funcionalidad', () => {
-  test('Debe hacer algo específico', async () => {
-    await driver.get(baseUrl);
-    await driver.wait(until.elementLocated(By.css('.mi-elemento')), 10000);
-    
-    const elemento = await driver.findElement(By.css('.mi-elemento'));
-    await elemento.click();
-    
-    expect(/* verificación */).toBe(true);
+const { By, until, Key } = require('selenium-webdriver');
+
+describe('Nombre del Módulo o Funcionalidad', () => {
+
+  test('Descripción de lo que debe hacer la prueba', async () => {
+    // 1. Navegar
+    await driver.get(baseUrl); // baseUrl es global
+
+    // 2. Interactuar
+    await driver.findElement(By.id('mi-boton')).click();
+
+    // 3. Verificar (Assertions)
+    const titulo = await driver.getTitle();
+    expect(titulo).toContain('Resultado Esperado');
   });
+
 });
 ```
 
-## 📞 Soporte
+### 🌍 Variables Globales Disponibles
 
-- 🐛 **Reportar Issues**: [GitHub Issues](https://github.com/proyecto-equipo-1/licitagil-grupo-1/issues)
-- 📖 **Documentación**: [Wiki del Proyecto](https://github.com/proyecto-equipo-1/licitagil-grupo-1/wiki)
-- 💬 **Discusiones**: Slack #licitagil-notifications
+Gracias a la configuración en `config/jest.setup.js`, tienes acceso directo a:
 
----
+- **`driver`**: La instancia del navegador Selenium. Se crea nueva para cada test (`beforeEach`) y se cierra al finalizar (`afterEach`).
+- **`baseUrl`**: La URL base de la aplicación web (por defecto `http://localhost:5173`).
+- **`apiUrl`**: La URL de la API (por defecto `http://localhost:3000`).
 
-**Última Actualización**: Noviembre 2024  
-**Versión**: 1.0.0  
-**Equipo**: LicitAgil Development Team
+### 💡 Buenas Prácticas
+
+1. **Selectores Robustos**: Prefiere `By.id` o `By.css` con clases específicas. Evita XPaths complejos si es posible.
+2. **Esperas Explícitas**: Usa `await driver.wait(until.elementLocated(...))` en lugar de `sleep` fijos. Esto hace los tests más rápidos y estables.
+3. **Independencia**: Cada test debe ser independiente. No dependas del estado que dejó el test anterior (el driver se reinicia, pero la base de datos no necesariamente).
+
+## 📂 Estructura del Proyecto
+
+- **`tests/`**: Aquí van todos los archivos de prueba (`.test.js`).
+- **`config/`**: Configuraciones de Jest y WebDriver.
+- **`screenshots/`**: Se guardan automáticamente capturas de pantalla cuando un test falla.
+- **`reports/`**: Reportes de ejecución.

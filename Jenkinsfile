@@ -111,5 +111,23 @@ pipeline {
                 sh 'rm -f api.pid web.pid'
             }
         }
+        success {
+            slackSend (
+                color: '#36a64f', 
+                message: "✅ Build Succeeded: ${env.JOB_NAME} [${env.BUILD_NUMBER}] (<${env.BUILD_URL}|Open>)"
+            )
+        }
+        failure {
+            slackSend (
+                color: '#dc3545', 
+                message: "❌ Build Failed: ${env.JOB_NAME} [${env.BUILD_NUMBER}] (<${env.BUILD_URL}|Open>)"
+            )
+        }
+        unstable {
+            slackSend (
+                color: '#ffc107', 
+                message: "⚠️ Build Unstable: ${env.JOB_NAME} [${env.BUILD_NUMBER}] (<${env.BUILD_URL}|Open>)"
+            )
+        }
     }
 }
