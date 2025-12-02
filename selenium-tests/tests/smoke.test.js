@@ -26,12 +26,14 @@ describe('Smoke Tests - Verificación Básica de LicitAgil', () => {
     console.log('✅ Login exitoso');
   }
 
-  beforeAll(async () => {
-    // Intentar login antes de las pruebas que lo requieren
+  beforeEach(async () => {
+    // Intentar login antes de cada prueba
     try {
-      await login();
+      if (global.driver) {
+        await login();
+      }
     } catch (e) {
-      console.log('⚠️ No se pudo hacer login (puede que ya esté logueado o falle):', e.message);
+      console.log('⚠️ No se pudo hacer login:', e.message);
     }
   });
 
