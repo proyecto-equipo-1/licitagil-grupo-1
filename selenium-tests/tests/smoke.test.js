@@ -11,6 +11,30 @@ describe('Smoke Tests - Verificación Básica de LicitAgil', () => {
     console.log('Smoke Tests completados');
   });
 
+  // Helper para login
+  async function login() {
+    console.log('🔑 Iniciando sesión como admin...');
+    await driver.get(`${baseUrl}/login`);
+    await driver.wait(until.elementLocated(By.id('email')), 5000);
+
+    await driver.findElement(By.id('email')).sendKeys('admin@licitagil.com');
+    await driver.findElement(By.id('password')).sendKeys('admin123');
+    await driver.findElement(By.css('button[type="submit"]')).click();
+
+    // Esperar redirección o indicador de login exitoso
+    await driver.wait(until.urlContains('/licitaciones'), 10000);
+    console.log('✅ Login exitoso');
+  }
+
+  beforeAll(async () => {
+    // Intentar login antes de las pruebas que lo requieren
+    try {
+      await login();
+    } catch (e) {
+      console.log('⚠️ No se pudo hacer login (puede que ya esté logueado o falle):', e.message);
+    }
+  });
+
   describe('Página Principal', () => {
 
     test('Debe cargar la página principal correctamente', async () => {

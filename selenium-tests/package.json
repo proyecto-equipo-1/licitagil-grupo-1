@@ -17,7 +17,7 @@
     "test:basic": "jest basic.test.js",
     "test:regression": "jest --testPathPattern=regression",
     "test:ci": "CI=true HEADLESS=true jest --coverage --reporters=default --reporters=jest-junit",
-    "test:smoke:ci": "CI=true HEADLESS=true jest tests/smoke.test.js --reporters=default",
+    "test:smoke:ci": "CI=true HEADLESS=true jest tests/smoke.test.js --reporters=default --reporters=jest-junit",
     "test:basic:ci": "CI=true HEADLESS=true jest basic.test.js --reporters=default",
     "setup": "node setup-webdrivers.js",
     "setup:drivers": "node setup-webdrivers.js",
