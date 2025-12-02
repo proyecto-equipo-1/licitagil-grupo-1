@@ -5,7 +5,7 @@ services:
   jenkins:
     build:
       context: .
-      dockerfile: docker/Dockerfile.jenkins
+      dockerfile: docker/Dockerfile
     container_name: licitagil-jenkins
     restart: unless-stopped
     ports:
@@ -34,15 +34,14 @@ services:
       retries: 5
       start_period: 60s
 
-  # Servicio auxiliar para ngrok (opcional)
+  # Servicio auxiliar para ngrok
   ngrok:
     image: ngrok/ngrok:latest
     container_name: licitagil-ngrok
     restart: unless-stopped
     command: 
-      - "tunnel"
-      - "--label"
-      - "edge=edghts_2hcX7L7zQu3sWiM3ULPJ8hvDpq4"
+      - "http"
+      - "--domain=${NGROK_DOMAIN:-}"
       - "http://jenkins:8080"
     ports:
       - "4040:4040"  # Web UI de ngrok
@@ -51,7 +50,7 @@ services:
     networks:
       - licitagil-network
     environment:
-      - NGROK_AUTHTOKEN=35wW0q1QTRXfRfohBu2L6vqNqOz_UYsBGXtKD9VureRpNyNZ
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
 
 volumes:
   jenkins_home:

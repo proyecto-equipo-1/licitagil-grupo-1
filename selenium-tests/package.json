@@ -17,7 +17,7 @@
     "test:basic": "jest basic.test.js",
     "test:regression": "jest --testPathPattern=regression",
     "test:ci": "CI=true HEADLESS=true jest --coverage --reporters=default --reporters=jest-junit",
-    "test:smoke:ci": "CI=true HEADLESS=true jest smoke.test.js --reporters=default",
+    "test:smoke:ci": "CI=true HEADLESS=true jest tests/smoke.test.js --reporters=default",
     "test:basic:ci": "CI=true HEADLESS=true jest basic.test.js --reporters=default",
     "setup": "node setup-webdrivers.js",
     "setup:drivers": "node setup-webdrivers.js",
@@ -38,7 +38,7 @@
   "dependencies": {
     "allure-commandline": "^2.24.1",
     "allure-jest": "^2.10.0",
-    "chromedriver": "^119.0.1",
+    "chromedriver": "latest",
     "dotenv": "^16.3.1",
     "edgedriver": "^6.2.0",
     "fs-extra": "^11.1.1",
