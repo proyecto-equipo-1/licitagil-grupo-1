@@ -52,7 +52,8 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.8",
-    "@types/selenium-webdriver": "^4.1.20"
+    "@types/selenium-webdriver": "^4.1.20",
+    "jest-junit": "^16.0.0"
   },
   "jest": {
     "testEnvironment": "node",
