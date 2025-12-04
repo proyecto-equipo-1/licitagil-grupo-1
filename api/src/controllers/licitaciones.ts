@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { validarRequisitosMinimos, determinarEstadoValidacion } from '../utils/pdfValidator.js';
 import { getTemplatesPath, getUploadsPath, getProjectRoot } from '../utils/paths.js';
+import { registrarCreacion, registrarEdicion, registrarEliminacion } from '../services/auditoria.js';
 
 export async function list(req: AuthRequest, res: Response) {
   try {
@@ -295,6 +296,14 @@ export async function create(req: AuthRequest, res: Response) {
       }
     });
 
+    // Registrar en auditoría
+    await registrarCreacion(req.user!.userId, 'Licitacion', licitacion.id, {
+      titulo,
+      descripcion,
+      estado: estadoInicial,
+      departamentoId
+    });
+
     res.status(201).json(licitacion);
   } catch (error) {
     console.error('Error al crear licitación:', error);
@@ -390,6 +399,13 @@ export async function update(req: AuthRequest, res: Response) {
     }
 
     const lic = await prisma.licitacion.update({ where: { id }, data });
+
+    // Registrar en auditoría
+    await registrarEdicion(req.user!.userId, 'Licitacion', id, 
+      { titulo: existing.titulo, descripcion: existing.descripcion, estado: existing.estado },
+      { titulo: lic.titulo, descripcion: lic.descripcion, estado: lic.estado }
+    );
+
     res.json(lic);
   } catch (e) {
     console.error(e);
@@ -401,11 +417,24 @@ export async function remove(req: AuthRequest, res: Response) {
   const id = Number(req.params.id);
   try {
     const lic = await prisma.licitacion.findUnique({ where: { id } });
-    if (lic && lic.pdfPath) {
-      const filePath = path.join(process.cwd(), lic.pdfPath.replace(/^\//, ''));
+    if (!lic) {
+      return res.status(404).json({ error: 'No encontrada' });
+    }
+    
+    if (lic.pdfPath) {
+      const filePath = path.join(process.cwd(), lic.pdfPath.replace(/^\///, ''));
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
+    
     await prisma.licitacion.delete({ where: { id } });
+
+    // Registrar en auditoría
+    await registrarEliminacion(req.user!.userId, 'Licitacion', id, {
+      titulo: lic.titulo,
+      estado: lic.estado,
+      departamentoId: lic.departamentoId
+    });
+
     res.json({ ok: true });
   } catch (e) {
     res.status(404).json({ error: 'No encontrada' });

@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { prisma } from '../db/prisma.js';
 import { Rol, EstadoLicitacion } from '@prisma/client';
+import { registrarCambioEstado } from '../services/auditoria.js';
 
 /**
  * POST /licitaciones/:id/enviar-aprobacion
@@ -42,6 +43,15 @@ export async function enviarAprobacion(req: AuthRequest, res: Response) {
         creador: { select: { name: true } }
       }
     });
+
+    // Registrar en auditoría
+    await registrarCambioEstado(
+      req.user!.userId,
+      'Licitacion',
+      licitacionId,
+      EstadoLicitacion.Borrador,
+      EstadoLicitacion.PendienteAprobacion
+    );
 
     res.json({
       message: 'Licitación enviada a aprobación',
@@ -111,6 +121,15 @@ export async function aprobarLicitacion(req: AuthRequest, res: Response) {
       }
     });
 
+    // Registrar en auditoría
+    await registrarCambioEstado(
+      req.user!.userId,
+      'Licitacion',
+      licitacionId,
+      EstadoLicitacion.PendienteAprobacion,
+      EstadoLicitacion.Aprobada
+    );
+
     res.json({
       message: 'Licitación aprobada exitosamente',
       licitacion: actualizada
@@ -179,6 +198,16 @@ export async function rechazarLicitacion(req: AuthRequest, res: Response) {
       }
     });
 
+    // Registrar en auditoría con motivo de rechazo
+    await registrarCambioEstado(
+      req.user!.userId,
+      'Licitacion',
+      licitacionId,
+      EstadoLicitacion.PendienteAprobacion,
+      EstadoLicitacion.Rechazada,
+      { motivo: motivo || 'No especificado' }
+    );
+
     res.json({
       message: `Licitación rechazada. Motivo: ${motivo || 'No especificado'}`,
       licitacion: actualizada
@@ -238,6 +267,15 @@ export async function publicarLicitacion(req: AuthRequest, res: Response) {
         creador: { select: { name: true } }
       }
     });
+
+    // Registrar en auditoría
+    await registrarCambioEstado(
+      req.user!.userId,
+      'Licitacion',
+      licitacionId,
+      EstadoLicitacion.Aprobada,
+      EstadoLicitacion.Abierta
+    );
 
     res.json({
       message: 'Licitación publicada exitosamente',
