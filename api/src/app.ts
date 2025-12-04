@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import licitacionesRouter from './routes/licitaciones.js';
 import authRouter from './routes/auth.js';
 import departamentosRouter from './routes/departamentos.js';
+import estadisticasRouter from './routes/estadisticas.js';
 import path from 'path';
 import { prisma } from './db/prisma.js';
 
@@ -97,5 +98,6 @@ app.get('/api/debug/db-stats', async (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/licitaciones', licitacionesRouter);
 app.use('/api/departamentos', departamentosRouter);
+app.use('/api/estadisticas', estadisticasRouter);
 
 export default app;
