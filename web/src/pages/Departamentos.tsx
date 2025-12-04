@@ -2,6 +2,8 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/departamentos.css';
 
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+
 interface Departamento {
   id: number;
   nombre: string;
@@ -57,7 +59,7 @@ export default function Departamentos() {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/departamentos', {
+      const response = await fetch(`${API_URL}/api/departamentos`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -93,8 +95,8 @@ export default function Departamentos() {
     try {
       const token = localStorage.getItem('token');
       const url = editingId 
-        ? `http://localhost:3000/api/departamentos/${editingId}`
-        : 'http://localhost:3000/api/departamentos';
+        ? `${API_URL}/api/departamentos/${editingId}`
+        : `${API_URL}/api/departamentos`;
       
       const method = editingId ? 'PUT' : 'POST';
 
@@ -160,7 +162,7 @@ export default function Departamentos() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/departamentos/${id}`, {
+      const response = await fetch(`${API_URL}/api/departamentos/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
