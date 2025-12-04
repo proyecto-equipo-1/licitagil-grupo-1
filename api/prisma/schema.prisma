@@ -40,6 +40,9 @@ model User {
   licitacionesCreadas   Licitacion[] @relation("CreadorLicitacion")
   licitacionesAprobadas Licitacion[] @relation("AprobadorLicitacion")
   
+  // Relación con Auditoría
+  auditLogs             AuditLog[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -97,4 +100,39 @@ enum EstadoValidacion {
   Borrador      // Sin PDF o no validado
   Incompleta    // PDF cargado pero faltan secciones
   Completa      // Todas las secciones presentes
+}
+
+enum TipoAccion {
+  CREAR
+  EDITAR
+  ELIMINAR
+  CAMBIO_ESTADO
+  LOGIN
+  LOGOUT
+}
+
+model AuditLog {
+  id              Int         @id @default(autoincrement())
+  
+  // Quién realizó la acción
+  usuarioId       Int
+  usuario         User        @relation(fields: [usuarioId], references: [id])
+  
+  // Qué acción se realizó
+  accion          TipoAccion
+  
+  // Sobre qué entidad (ej: "Licitacion", "User", "Departamento")
+  entidad         String
+  entidadId       Int?        // ID de la entidad afectada (null para LOGIN/LOGOUT)
+  
+  // Detalles del cambio (JSON con valores antes/después)
+  detallesAntes   Json?       // Estado anterior (para EDITAR, ELIMINAR, CAMBIO_ESTADO)
+  detallesDespues Json?       // Estado nuevo (para CREAR, EDITAR, CAMBIO_ESTADO)
+  
+  // Cuándo ocurrió
+  createdAt       DateTime    @default(now())
+  
+  @@index([usuarioId])
+  @@index([entidad, entidadId])
+  @@index([createdAt])
 }

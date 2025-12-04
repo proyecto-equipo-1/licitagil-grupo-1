@@ -22,7 +22,10 @@ export default function App() {
             <NavLink to="/estadisticas">Estadísticas</NavLink>
           )}
           {user?.rol === 'Administrador' && (
-            <NavLink to="/departamentos">Departamentos</NavLink>
+            <>
+              <NavLink to="/departamentos">Departamentos</NavLink>
+              <NavLink to="/auditoria">Auditoría</NavLink>
+            </>
           )}
         </nav>
         

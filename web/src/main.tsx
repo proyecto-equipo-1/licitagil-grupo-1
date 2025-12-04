@@ -12,6 +12,7 @@ import Login from './pages/Login'  // ← Crear este
 import Register from './pages/Register'  // ← Crear este
 import Departamentos from './pages/Departamentos'  // ← Gestión de departamentos
 import Estadisticas from './pages/Estadisticas'  // ← Panel de estadísticas
+import Auditoria from './pages/Auditoria'  // ← Panel de auditoría
 
 // Componente para manejar errores 404
 function ErrorPage() {
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
         { path: 'licitaciones/:id/editar', element: <EditPage /> },
         { path: 'departamentos', element: <Departamentos /> },
         { path: 'estadisticas', element: <Estadisticas /> },
+        { path: 'auditoria', element: <Auditoria /> },
         ]
       }
     ]

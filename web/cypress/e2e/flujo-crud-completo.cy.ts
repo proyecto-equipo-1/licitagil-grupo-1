@@ -236,6 +236,9 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
   it('✏️ PASO 4: Editar fecha y estado de la licitación', () => {
     cy.log('🚀 INICIANDO PASO 4: Editar licitación...')
     
+    // Interceptar la llamada PUT para verificar que realmente se envía
+    cy.intercept('PUT', `**/api/licitaciones/${licitacionTest.id}`).as('updateLicitacion')
+    
     // Ir a la página de edición
     cy.visit(`/licitaciones/${licitacionTest.id}/editar`)
     cy.wait(2000) // Ver que carga el formulario de edición
@@ -273,14 +276,20 @@ describe('LicitAgil - Flujo Completo CRUD (Crear → Buscar → Ver → Editar �
     cy.log('💾 Guardando cambios...')
     cy.get('button[type="submit"], .save-btn, .btn-primary').click()
     
-    // Esperar a que se procese y navegar manualmente al detalle
-    cy.wait(3000) // Esperar que se guarde (más tiempo)
+    // ✅ VERIFICAR QUE LA LLAMADA PUT SE REALIZÓ EXITOSAMENTE
+    cy.wait('@updateLicitacion').then((interception) => {
+      expect(interception.response?.statusCode).to.be.oneOf([200, 201])
+      cy.log('✅ Servidor respondió correctamente al guardar')
+    })
     
-    // Navegar manualmente a la página de detalle para verificar cambios
-    cy.log('🔍 Verificando cambios guardados...')
+    // Esperar redirección automática al home (la función submit navega a '/')
+    cy.url().should('eq', Cypress.config().baseUrl + '/')
+    cy.log('✅ Redirección automática exitosa')
+    
+    // Ahora verificar en el detalle que los cambios se guardaron
     cy.visit(`/licitaciones/${licitacionTest.id}`)
     cy.get('body').should('contain.text', '[EDITADA por Cypress E2E]')
-    cy.wait(2000) // Ver los cambios aplicados
+    cy.wait(1000) // Ver los cambios aplicados
     
     // Screenshot de la licitación editada
     cy.screenshot('13-licitacion-editada-exitosamente')
