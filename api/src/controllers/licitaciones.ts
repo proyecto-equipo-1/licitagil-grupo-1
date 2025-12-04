@@ -422,7 +422,7 @@ export async function remove(req: AuthRequest, res: Response) {
     }
     
     if (lic.pdfPath) {
-      const filePath = path.join(process.cwd(), lic.pdfPath.replace(/^\///, ''));
+      const filePath = path.join(process.cwd(), lic.pdfPath.replace(/^\//, ''));
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
     
