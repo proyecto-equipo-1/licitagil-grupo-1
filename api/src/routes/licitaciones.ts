@@ -23,7 +23,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ========================================
-// TODAS LAS RUTAS REQUIEREN AUTENTICACIÓN
+// RUTAS PÚBLICAS (sin autenticación)
+// ========================================
+
+// Descargar plantilla de licitación (pública - es solo una plantilla genérica)
+router.get('/plantilla/descargar', licitacionesController.descargarPlantilla);
+
+// Descargar PDF de licitación individual (pública para vista previa en iframe)
+router.get('/:id/pdf', licitacionesController.getPdf);
+
+// ========================================
+// TODAS LAS RUTAS SIGUIENTES REQUIEREN AUTENTICACIÓN
 // ========================================
 router.use(authMiddleware);
 
@@ -37,9 +47,6 @@ router.get('/', licitacionesController.list);
 // Ver detalle de una licitación (valida acceso por departamento)
 router.get('/:id', verificarDepartamentoLicitacion, licitacionesController.getOne);
 
-// Descargar PDF de licitación (valida acceso por departamento)
-router.get('/:id/pdf', verificarDepartamentoLicitacion, licitacionesController.getPdf);
-
 // Crear licitación (solo roles internos, no Postulantes)
 router.post('/', 
   requireRole(Rol.Funcionario, Rol.Supervisor, Rol.Adquisiciones, Rol.Administrador),
@@ -52,9 +59,6 @@ router.post('/:id/revalidar',
   verificarDepartamentoLicitacion,
   licitacionesController.revalidarPdf
 );
-
-// Descargar plantilla de licitación (nueva desde testing - no requiere auth especial)
-router.get('/plantilla/descargar', licitacionesController.descargarPlantilla);
 
 // Editar licitación (valida acceso por departamento)
 router.put('/:id', 
