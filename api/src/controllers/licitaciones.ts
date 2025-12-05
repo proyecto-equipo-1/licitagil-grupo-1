@@ -170,26 +170,54 @@ export async function getPdf(req: AuthRequest, res: Response) {
   stream.pipe(res);
 }
 
+
 export async function create(req: AuthRequest, res: Response) {
+  // --- INICIO DE LA FUNCIÓN ---
+  console.log("================================================================");
+  console.log(`▶️ [CREATE-START] Petición ${req.method} a ${req.originalUrl} iniciada a las ${new Date().toISOString()}`);
+  console.log("================================================================");
+  
+  console.log("📩 [INPUT-BODY] Body crudo recibido en la petición:", JSON.stringify(req.body, null, 2));
+  console.log("📎 [INPUT-FILE] Archivo recibido:", req.file ? {
+    fieldname: req.file.fieldname,
+    originalname: req.file.originalname,
+    filename: req.file.filename,
+    mimetype: req.file.mimetype,
+    size: `${(req.file.size / 1024).toFixed(2)} KB`
+  } : "No se recibió ningún archivo.");
+  
+  console.log("👤 [INPUT-USER] Información del usuario autenticado:", req.user);
+  
+  // --- BLOQUE TRY-CATCH PRINCIPAL ---
   try {
-    // Obtener usuario con rol y departamento
+    // --- 1. OBTENCIÓN Y VALIDACIÓN DEL USUARIO ---
+    console.log("\n--- PASO 1: OBTENCIÓN Y VALIDACIÓN DEL USUARIO ---");
+    const userId = req.user!.userId;
+    console.log(`🔍 [DB-USER] Buscando usuario en la base de datos con ID: ${userId}`);
+    
     const usuario = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
+      where: { id: userId },
       select: { rol: true, departamentoId: true }
     });
 
     if (!usuario) {
+      console.warn(`⚠️ [AUTH-FAIL] ¡Usuario no encontrado! El ID ${userId} no existe en la base de datos.`);
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+    console.log("👤 [DB-USER] Usuario encontrado:", usuario);
 
-    // Validar que Postulantes no puedan crear licitaciones
+    // Validación de rol
+    console.log(`🔐 [AUTH-ROLE] Validando rol del usuario. Rol actual: '${usuario.rol}'`);
     if (usuario.rol === Rol.Postulante) {
+      console.warn(`⛔ [AUTH-DENIED] Acceso denegado para el rol '${Rol.Postulante}'. No puede crear licitaciones.`);
       return res.status(403).json({ 
         error: 'Los postulantes no pueden crear licitaciones' 
       });
     }
+    console.log("✅ [AUTH-ROLE] Rol de usuario permitido para crear licitaciones.");
 
-    // Si viene un archivo PDF, guardar la ruta y validarlo
+    // --- 2. PROCESAMIENTO DEL ARCHIVO PDF (SI EXISTE) ---
+    console.log("\n--- PASO 2: PROCESAMIENTO DE ARCHIVO PDF ---");
     let pdfPath: string | undefined = undefined;
     let estadoValidacion: 'Borrador' | 'Incompleta' | 'Completa' = 'Borrador';
     let seccionesFaltantes: string[] = [];
@@ -197,119 +225,186 @@ export async function create(req: AuthRequest, res: Response) {
     let fechaValidacion: Date | undefined = undefined;
 
     if (req.file) {
-      pdfPath = `/uploads/${req.file.filename}`;
+      console.log("📁 [PDF-PROCESS] Se detectó un archivo. Iniciando procesamiento del PDF...");
       
-      // Validar el PDF automáticamente
+      pdfPath = `/uploads/${req.file.filename}`;
+      console.log(`📂 [PDF-PATH] Path relativo del PDF establecido en: '${pdfPath}'`);
+
       try {
         const uploadsPath = getUploadsPath();
         const rutaCompletaPdf = path.join(uploadsPath, req.file.filename);
-        
-        console.log('🔍 Validando PDF:', {
-          filename: req.file.filename,
-          uploadsPath,
-          rutaCompletaPdf,
-          exists: fs.existsSync(rutaCompletaPdf)
+        const pdfExiste = fs.existsSync(rutaCompletaPdf);
+
+        console.log("🗺️ [PDF-PATHS] Rutas de procesamiento del PDF:", {
+          pdfPathRelativo: pdfPath,
+          directorioUploads: uploadsPath,
+          rutaCompletaCalculada: rutaCompletaPdf,
+          archivoExisteEnDisco: pdfExiste
         });
-        
+
+        if (!pdfExiste) {
+          throw new Error(`El archivo ${req.file.filename} no se encontró en el directorio de uploads.`);
+        }
+
+        console.log("🔬 [PDF-VALIDATE] Invocando 'validarRequisitosMinimos'...");
         const resultadoValidacion = await validarRequisitosMinimos(rutaCompletaPdf);
+        console.log("📋 [PDF-VALIDATE-RESULT] Resultado de la validación del PDF:", JSON.stringify(resultadoValidacion, null, 2));
         
         estadoValidacion = determinarEstadoValidacion(resultadoValidacion);
         seccionesFaltantes = resultadoValidacion.seccionesFaltantes;
         mensajeValidacion = resultadoValidacion.mensaje;
         fechaValidacion = new Date();
 
-        console.log('📋 Validación de PDF:', {
-          archivo: req.file.originalname,
-          estado: estadoValidacion,
+        console.log("📊 [PDF-STATUS] Estado de validación determinado:", {
+          estadoValidacion,
           seccionesFaltantes,
-          mensaje: mensajeValidacion
+          mensajeValidacion,
+          fechaValidacion
         });
-      } catch (error) {
-        console.error('❌ Error al validar PDF:', error);
-        estadoValidacion = 'Borrador';
-        seccionesFaltantes = ['Portada', 'Objetivo y Alcance', 'Requisitos Técnicos', 'Criterios de Evaluación'];
-        mensajeValidacion = 'Error al procesar el archivo PDF';
-        fechaValidacion = new Date();
+
+      } catch (error: any) {
+        console.error("❌ [PDF-ERROR] Ocurrió un error grave durante la validación del PDF:", error.message);
         
-        console.log('⚠️ PDF marcado como Borrador por error en el procesamiento');
+        estadoValidacion = "Borrador";
+        seccionesFaltantes = ["Portada", "Objetivo y Alcance", "Requisitos Técnicos", "Criterios de Evaluación"];
+        mensajeValidacion = "Error al procesar el archivo PDF. Se requiere revisión manual.";
+        fechaValidacion = new Date();
+
+        console.warn("⚠️ [PDF-FALLBACK] Se ha establecido el estado de validación a 'Borrador' como medida de seguridad.");
       }
+    } else {
+      console.log("🤷 [PDF-PROCESS] No se proporcionó ningún archivo PDF. Se omitirá la validación.");
     }
-
+    
+    // --- 3. MANEJO Y VALIDACIÓN DE LA FECHA DE CIERRE ---
+    console.log("\n--- PASO 3: MANEJO Y VALIDACIÓN DE FECHA DE CIERRE ---");
     const body = req.body;
-    if (body.fecha_cierre && typeof body.fecha_cierre === 'string') {
-      body.fecha_cierre = new Date(body.fecha_cierre);
-    }
+    console.log("📅 [FECHA-INPUT] Valor de 'fecha_cierre' recibido en el body:", body.fecha_cierre);
+    console.log("🤔 [FECHA-TYPE] Tipo de dato de 'fecha_cierre':", typeof body.fecha_cierre);
 
-    // Validar con Zod
+    if (body.fecha_cierre && typeof body.fecha_cierre === 'string') {
+      console.log("💬 [FECHA-CONVERT] 'fecha_cierre' es un string. Se intentará convertir a un objeto Date.");
+      const fechaOriginalString = body.fecha_cierre;
+      const fechaConvertida = new Date(fechaOriginalString);
+      
+      console.log(`➡️ [FECHA-RESULT] String original: '${fechaOriginalString}' -> Objeto Date:`, fechaConvertida);
+      
+      if (isNaN(fechaConvertida.getTime())) {
+          console.warn("❌ [FECHA-INVALID] ¡La conversión resultó en una fecha inválida! Zod probablemente rechazará esto.");
+      } else {
+          console.log("✅ [FECHA-VALID] La fecha convertida parece ser válida.");
+      }
+      body.fecha_cierre = fechaConvertida;
+    } else if (body.fecha_cierre) {
+      console.log("👍 [FECHA-SKIP] 'fecha_cierre' no es un string. Se asume que ya tiene un formato compatible (ej. timestamp, objeto Date desde un cliente) y se pasará directamente a Zod.");
+    } else {
+      console.log("🤷 [FECHA-NULL] 'fecha_cierre' es nulo o indefinido en el body.");
+    }
+    console.log("📝 [FECHA-POST] Estado final del body ANTES de la validación con Zod:", JSON.stringify(body, null, 2));
+
+
+    // --- 4. VALIDACIÓN DEL BODY CON ZOD ---
+    console.log("\n--- PASO 4: VALIDACIÓN DE ESQUEMA CON ZOD ---");
+    console.log("🛡️ [ZOD-VALIDATE] Ejecutando 'licitacionCreateSchema.safeParse' sobre el body procesado...");
     const validation = licitacionCreateSchema.safeParse(body);
+
     if (!validation.success) {
+      console.warn("❌ [ZOD-FAIL] La validación del esquema falló.");
+      console.warn("❗ [ZOD-ERRORS] Detalles del error de Zod:", JSON.stringify(validation.error.flatten(), null, 2));
       return res.status(400).json({ 
-        error: 'Datos inválidos', 
-        details: validation.error.errors 
+        error: 'Datos de entrada inválidos', 
+        details: validation.error.flatten() 
       });
     }
-
+    console.log("✅ [ZOD-SUCCESS] La validación con Zod fue exitosa.");
+    console.log("📦 [ZOD-DATA] Datos validados y limpios:", validation.data);
     const { titulo, descripcion, fecha_cierre } = validation.data;
 
-    // Determinar departamentoId
+    // --- 5. LÓGICA DE NEGOCIO (DEPARTAMENTO Y ESTADO) ---
+    console.log("\n--- PASO 5: APLICANDO LÓGICA DE NEGOCIO ---");
+    // Determinar departamento
+    console.log(`🏢 [BIZ-DEPT] Determinando departamento para el usuario con rol '${usuario.rol}'`);
     let departamentoId: number | null = null;
-    
     if (usuario.rol === Rol.Funcionario) {
-      // Funcionarios solo pueden crear en su departamento
       if (!usuario.departamentoId) {
-        return res.status(400).json({ 
-          error: 'Tu usuario no tiene departamento asignado' 
-        });
+        console.warn(`⚠️ [BIZ-DEPT-FAIL] El usuario Funcionario (ID: ${userId}) no tiene un departamento asignado.`);
+        return res.status(400).json({ error: 'Tu usuario (Funcionario) no tiene un departamento asignado' });
       }
       departamentoId = usuario.departamentoId;
+      console.log(`📌 [BIZ-DEPT] Rol Funcionario -> Departamento asignado: ${departamentoId}`);
     } else if (usuario.rol === Rol.Supervisor) {
-      // Supervisores crean en su departamento
       departamentoId = usuario.departamentoId || null;
+      console.log(`📌 [BIZ-DEPT] Rol Supervisor -> Departamento asignado: ${departamentoId} (puede ser null)`);
+    } else {
+      console.log(`📌 [BIZ-DEPT] Rol '${usuario.rol}' -> No se asigna departamento a nivel de licitación.`);
     }
-    // Adquisiciones y Admin pueden crear sin departamento (null)
 
     // Determinar estado inicial
+    console.log(`📊 [BIZ-STATE] Determinando estado inicial para el rol '${usuario.rol}'`);
     let estadoInicial: EstadoLicitacion = EstadoLicitacion.Borrador;
     if (usuario.rol === Rol.Adquisiciones || usuario.rol === Rol.Administrador) {
-      estadoInicial = EstadoLicitacion.Abierta; // Directo a publicación
+      estadoInicial = EstadoLicitacion.Abierta;
+      console.log(`📣 [BIZ-STATE] Rol privilegiado. Estado inicial: '${EstadoLicitacion.Abierta}'`);
+    } else {
+      console.log(`📣 [BIZ-STATE] Rol estándar. Estado inicial: '${EstadoLicitacion.Borrador}'`);
     }
 
-    // Crear licitación
+    // --- 6. CREACIÓN EN LA BASE DE DATOS ---
+    console.log("\n--- PASO 6: CREACIÓN DEL REGISTRO EN LA BASE DE DATOS ---");
+    const dataParaCrear = {
+      titulo,
+      descripcion,
+      estado: estadoInicial,
+      fechaCierre: fecha_cierre,
+      pdfPath,
+      pdfOriginalName: req.file?.originalname,
+      creadorId: userId,
+      departamentoId,
+      estadoValidacion,
+      seccionesFaltantes,
+      mensajeValidacion,
+      fechaValidacion
+    };
+    
+    console.log("💾 [PRISMA-CREATE] Objeto de datos que se enviará a 'prisma.licitacion.create':", JSON.stringify(dataParaCrear, null, 2));
+    
     const licitacion = await prisma.licitacion.create({
-      data: {
-        titulo,
-        descripcion,
-        estado: estadoInicial,
-        fechaCierre: fecha_cierre,
-        pdfPath,
-        pdfOriginalName: req.file?.originalname,
-        creadorId: req.user!.userId,
-        departamentoId,
-        estadoValidacion,
-        seccionesFaltantes,
-        mensajeValidacion,
-        fechaValidacion
-      },
+      data: dataParaCrear,
       include: {
         departamento: { select: { nombre: true, codigo: true } },
         creador: { select: { name: true, email: true } }
       }
     });
+    console.log("🎉 [PRISMA-SUCCESS] Licitación creada exitosamente en la base de datos. Registro completo:", licitacion);
 
-    // Registrar en auditoría
-    await registrarCreacion(req.user!.userId, 'Licitacion', licitacion.id, {
-      titulo,
-      descripcion,
-      estado: estadoInicial,
-      departamentoId
-    });
+    // --- 7. REGISTRO DE AUDITORÍA ---
+    console.log("\n--- PASO 7: REGISTRO DE AUDITORÍA ---");
+    const datosAuditoria = { titulo, descripcion, estado: estadoInicial, departamentoId };
+    console.log("📝 [AUDIT] Registrando evento de creación para la licitación ID:", licitacion.id);
+    console.log("📝 [AUDIT-DATA] Datos a registrar:", datosAuditoria);
+    
+    await registrarCreacion(userId, 'Licitacion', licitacion.id, datosAuditoria);
+    console.log("📘 [AUDIT-SUCCESS] Evento de auditoría registrado con éxito.");
 
-    res.status(201).json(licitacion);
-  } catch (error) {
-    console.error('Error al crear licitación:', error);
-    res.status(500).json({ error: 'Error al crear licitación' });
+    // --- FINALIZACIÓN EXITOSA ---
+    console.log("\n--- FINALIZACIÓN: ENVIANDO RESPUESTA AL CLIENTE ---");
+    console.log("✅ [RESPONSE-201] Enviando respuesta exitosa (201 Created).");
+    return res.status(201).json(licitacion);
+
+  } catch (error: any) {
+    // --- MANEJO DE ERRORES INESPERADOS ---
+    console.error("💥 [FATAL-ERROR] Ocurrió un error inesperado en la función 'create':", error);
+    console.error("Stack del error:", error.stack);
+    
+    console.log("❌ [RESPONSE-500] Enviando respuesta de error genérico (500 Internal Server Error).");
+    return res.status(500).json({ error: 'Error interno del servidor al crear la licitación', detalle: error.message });
+  } finally {
+    console.log("================================================================");
+    console.log(`🔚 [CREATE-END] Petición a ${req.originalUrl} finalizada a las ${new Date().toISOString()}`);
+    console.log("================================================================\n");
   }
 }
+
 
 export async function update(req: AuthRequest, res: Response) {
   const id = Number(req.params.id);
