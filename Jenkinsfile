@@ -81,7 +81,7 @@ pipeline {
                         echo "🧪 Ejecutando Smoke Tests..."
                         // Ejecutamos los tests. Si fallan, imprimimos los logs de la API y Web para debug
                         try {
-                            sh 'npm run test:smoke:ci'
+                            sh 'npm run test:full:ci'
                         } catch (Exception e) {
                             echo "❌ TEST FALLÓ. Mostrando logs de la aplicación para debug:"
                             sh 'echo "--- API LOG ---" && cat ../api.log'
