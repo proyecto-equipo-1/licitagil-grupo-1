@@ -56,6 +56,10 @@ LicitAgil es una **aplicación web moderna y completa** para la **gestión integ
 
 **[Ver Video de Entrega 2](https://youtu.be/bCjpXr6QRj0)**
 
+**[Ver Video de Entrega 3](https://youtu.be/Nn7X1ZbEF78)**
+
+**[Ver Presentación de Entrega 3](https://www.canva.com/design/DAG1oaBM4MM/Xcb1O3OV2p4L9AkdlBdIKg/edit?utm_content=DAG1oaBM4MM&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)**
+
 ---
 
 ## 👥 Integrantes del Equipo
