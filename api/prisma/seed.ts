@@ -41,14 +41,15 @@ async function main() {
   const hashedPassword = await bcrypt.hash('admin123', 10);
 
   // Administrador (sin departamento)
-  const admin = await prisma.user.create({
-    data: {
-      email: 'admin@licitagil.com',
-      password: hashedPassword,
-      name: 'Administrador Sistema',
-      rol: Rol.Administrador
-    }
-  });
+ const admin = await prisma.user.create({
+  data: {
+    email: 'admin@licitagil.com',
+    password: hashedPassword,
+    name: 'Administrador Sistema',
+    rol: Rol.Administrador,
+    departamentoId: deptFinanzas.id // O deptTI.id, el que prefieras
+  }
+});
 
   // Adquisiciones (sin departamento)
   const adquisiciones = await prisma.user.create({

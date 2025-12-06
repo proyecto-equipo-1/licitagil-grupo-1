@@ -1,128 +1,133 @@
 pipeline {
-  agent any
+    // Usamos 'any' porque TU contenedor Docker YA TIENE todo instalado.
+    agent any
 
-  environment {
-    AWS_REGION     = 'us-east-1'
-    AMPLIFY_APP_ID = 'd386d94bix0hzl'
-    DEPLOY_ENV     = "${env.BRANCH_NAME == 'main' ? 'production' : 'testing'}"
-    AMPLIFY_BRANCH = "${env.BRANCH_NAME == 'main' ? 'main' : 'testing'}"
-  }
+    environment {
+        // Variables de entorno para que Chrome sepa que está en Docker
+        CI                = 'true'
+        // Definir DISPLAY para Selenium (Xvfb ya está corriendo en :99 gracias a tu Dockerfile)
+        DISPLAY           = ':99'
+        SELENIUM_BROWSER  = 'chrome'
+        SELENIUM_HEADLESS = 'true'
+        
+        // URLs de tu app
+        BASE_URL          = 'http://localhost:5173'
+        API_URL           = 'http://localhost:3000'
+        DATABASE_URL      = 'postgresql://postgres:postgres@postgres:5432/licitagil'
+    }
 
-  options {
-    buildDiscarder(logRotator(numToKeepStr: '10'))
-    timeout(time: 30, unit: 'MINUTES')
-    disableConcurrentBuilds()
-  }
+    options {
+        timeout(time: 15, unit: 'MINUTES')
+        disableConcurrentBuilds()
+    }
 
-  stages {
-
-    stage('Setup') {
-      steps {
-        script {
-          echo "=========================================="
-          echo "🚀 LICITAGIL CI/CD PIPELINE"
-          echo "=========================================="
-          echo "Branch: ${env.BRANCH_NAME}"
-          echo "Build: #${env.BUILD_NUMBER}"
-          echo "Environment: ${env.DEPLOY_ENV}"
-          echo "=========================================="
+    stages {
+        stage('Validate Tools') {
+            steps {
+                script {
+                    echo "🔧 Verificando entorno..."
+                    sh 'node --version'
+                    sh 'npm --version'
+                    sh 'google-chrome --version'
+                    echo "✅ Entorno correcto."
+                }
+            }
         }
-      }
+
+        stage('Install Dependencies') {
+            steps {
+                // Instalamos todo en paralelo para ganar tiempo
+                parallel(
+                    'API Deps': { dir('api') { sh 'npm ci --silent || npm install --silent' } },
+                    'Web Deps': { dir('web') { sh 'npm ci --silent || npm install --silent' } },
+                    'Selenium Deps': { dir('selenium-tests') { sh 'npm ci --silent || npm install --silent' } }
+                )
+            }
+        }
+
+        stage('Build & Start') {
+            steps {
+                script {
+                    echo "🏗️ Construyendo y levantando servicios..."
+                    
+                    // Build (si tienes scripts de build)
+                    dir('api') { sh 'npm run build --if-present' }
+                    dir('web') { sh 'npm run build --if-present' }
+
+                    // Preparar Base de Datos
+                    dir('api') {
+                        echo "🗄️ Preparando Base de Datos..."
+                        // Esperar a que Postgres esté listo
+                        sleep 5
+                        sh 'npx prisma migrate dev --name init'
+                        sh 'npx prisma db seed'
+                    }
+
+                    // Start en background (usando nohup)
+                    // Usamos sleep para darles tiempo de arrancar
+                    dir('api') { sh 'nohup npm start > ../api.log 2>&1 & echo $! > ../api.pid' }
+                    dir('web') { sh 'nohup npm run dev > ../web.log 2>&1 & echo $! > ../web.pid' }
+                    
+                    echo "⏳ Esperando 10 segundos a que los servicios inicien..."
+                    sleep 10
+                }
+            }
+        }
+
+        stage('Run Selenium Tests') {
+            steps {
+                dir('selenium-tests') {
+                    script {
+                        echo "🧪 Ejecutando Smoke Tests..."
+                        // Ejecutamos los tests. Si fallan, imprimimos los logs de la API y Web para debug
+                        try {
+                            sh 'npm run test:full:ci'
+                        } catch (Exception e) {
+                            echo "❌ TEST FALLÓ. Mostrando logs de la aplicación para debug:"
+                            sh 'echo "--- API LOG ---" && cat ../api.log'
+                            sh 'echo "--- WEB LOG ---" && cat ../web.log'
+                            error("Tests fallaron") // Marcamos el build como fallido
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    // Guardar screenshots y reportes
+                    archiveArtifacts artifacts: 'selenium-tests/screenshots/**/*.png', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'selenium-tests/reports/**/*', allowEmptyArchive: true
+                    junit testResults: 'selenium-tests/reports/**/*.xml', allowEmptyResults: true
+                }
+            }
+        }
     }
 
-    stage('Install Dependencies') {
-      steps {
-        script {
-          echo "📦 Instalando dependencias..."
-          dir('api') {
-            sh 'npm install --legacy-peer-deps || true'
-          }
-          dir('web') {
-            sh 'npm install --legacy-peer-deps || true'
-          }
+    post {
+        always {
+            script {
+                echo "🧹 Limpieza..."
+                // Matamos los procesos de Node para no dejar basura en el contenedor
+                sh 'pkill -f node || true'
+                sh 'rm -f api.pid web.pid'
+            }
         }
-      }
-    }
-
-    stage('Build') {
-      steps {
-        script {
-          echo "🏗️ Compilando proyecto..."
-          dir('api') {
-            sh 'npm run build || echo "Build API completado"'
-          }
-          dir('web') {
-            sh 'npm run build || echo "Build Web completado"'
-          }
+        success {
+            slackSend (
+                color: '#36a64f', 
+                message: "✅ Build Succeeded: ${env.JOB_NAME} [${env.BUILD_NUMBER}] (<${env.BUILD_URL}|Open>)"
+            )
         }
-      }
-    }
-
-    stage('Deploy to AWS Amplify') {
-      when { anyOf { branch 'main'; branch 'testing' } }
-      steps {
-        script {
-          echo "=========================================="
-          echo "☁️ Desplegando a AWS Amplify"
-          echo "Environment: ${env.DEPLOY_ENV}"
-          echo "Branch: ${env.AMPLIFY_BRANCH}"
-          echo "=========================================="
+        failure {
+            slackSend (
+                color: '#dc3545', 
+                message: "❌ Build Failed: ${env.JOB_NAME} [${env.BUILD_NUMBER}] (<${env.BUILD_URL}|Open>)"
+            )
         }
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                          credentialsId: 'aws-credentials',
-                          accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                          secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-          sh '''
-            aws amplify start-job \
-              --app-id ${AMPLIFY_APP_ID} \
-              --branch-name ${AMPLIFY_BRANCH} \
-              --job-type RELEASE \
-              --region ${AWS_REGION} || echo "Deploy iniciado"
-          '''
+        unstable {
+            slackSend (
+                color: '#ffc107', 
+                message: "⚠️ Build Unstable: ${env.JOB_NAME} [${env.BUILD_NUMBER}] (<${env.BUILD_URL}|Open>)"
+            )
         }
-      }
     }
-
-    stage('Summary') {
-      steps {
-        script {
-          def appUrl = "https://${env.AMPLIFY_BRANCH}.${env.AMPLIFY_APP_ID}.amplifyapp.com"
-          echo """
-========================================
-✅ PIPELINE COMPLETADO
-========================================
-Build: #${env.BUILD_NUMBER}
-Branch: ${env.BRANCH_NAME}
-Environment: ${env.DEPLOY_ENV}
-Frontend: ${appUrl}
-========================================
-          """
-        }
-      }
-    }
-  }
-
-  post {
-    success {
-      echo "✅ PIPELINE EXITOSO"
-      slackSend(
-        color: 'good',
-        channel: '#jenkins',
-        message: "✅ *Build Exitoso* - ${env.JOB_NAME} #${env.BUILD_NUMBER}\n*Branch:* ${env.BRANCH_NAME}\n*URL:* https://${env.AMPLIFY_BRANCH}.${env.AMPLIFY_APP_ID}.amplifyapp.com"
-      )
-    }
-    
-    failure {
-      echo "❌ PIPELINE FALLÓ"
-      slackSend(
-        color: 'danger',
-        channel: '#jenkins',
-        message: "❌ *Build Fallido* - ${env.JOB_NAME} #${env.BUILD_NUMBER}\n*Branch:* ${env.BRANCH_NAME}\n*Logs:* ${env.BUILD_URL}console"
-      )
-    }
-    
-    always {
-      echo "🧹 Limpieza completada"
-    }
-  }
 }

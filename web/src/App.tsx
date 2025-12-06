@@ -18,8 +18,14 @@ export default function App() {
         <nav className="app-nav">
           <NavLink to="/">Listado</NavLink>
           <NavLink to="/licitaciones/nueva">Nueva Licitación</NavLink>
+          {(user?.rol === 'Supervisor' || user?.rol === 'Adquisiciones' || user?.rol === 'Administrador') && (
+            <NavLink to="/estadisticas">Estadísticas</NavLink>
+          )}
           {user?.rol === 'Administrador' && (
-            <NavLink to="/departamentos">Departamentos</NavLink>
+            <>
+              <NavLink to="/departamentos">Departamentos</NavLink>
+              <NavLink to="/auditoria">Auditoría</NavLink>
+            </>
           )}
         </nav>
         

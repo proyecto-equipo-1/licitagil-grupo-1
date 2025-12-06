@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/auth.css';
 
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+
 interface Departamento {
   id: number;
   nombre: string;
@@ -32,7 +34,7 @@ export default function Register() {
 
   const fetchDepartamentos = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/departamentos');
+      const response = await fetch(`${API_URL}/api/departamentos`);
       if (response.ok) {
         const data = await response.json();
         setDepartamentos(data);
@@ -83,7 +85,7 @@ export default function Register() {
         payload.departamentoId = Number(departamentoId);
       }
 
-      const response = await fetch('http://localhost:3000/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

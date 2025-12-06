@@ -1,0 +1,42 @@
+{
+  "testData": {
+    "licitacion": {
+      "titulo": "Licitación de Prueba Selenium",
+      "descripcion": "Esta es una licitación creada automáticamente por Selenium WebDriver para pruebas E2E",
+      "estado": "Abierta",
+      "fechaCierre": "2024-12-31T23:59:59",
+      "archivo": "test-document.pdf"
+    },
+    "busqueda": {
+      "terminosValidos": ["test", "selenium", "prueba", "licitacion"],
+      "terminosInvalidos": ["xyzzzznoexiste123456", "termino_inexistente", "404notfound"]
+    },
+    "usuarios": {
+      "selenium": {
+        "email": "selenium-test@licitagil.com",
+        "password": "SeleniumTest2024!",
+        "nombre": "Usuario Selenium"
+      }
+    }
+  },
+  "configuracion": {
+    "timeouts": {
+      "implicit": 10000,
+      "explicit": 30000,
+      "pageLoad": 30000
+    },
+    "urls": {
+      "base": "http://localhost:5173",
+      "api": "http://localhost:3000",
+      "health": "http://localhost:3000/healthz"
+    },
+    "navegadores": {
+      "chrome": {
+        "options": ["--no-sandbox", "--disable-dev-shm-usage", "--window-size=1920,1080"]
+      },
+      "firefox": {
+        "options": ["--width=1920", "--height=1080"]
+      }
+    }
+  }
+}

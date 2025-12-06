@@ -174,7 +174,47 @@ export default function EditPage() {
     e.preventDefault();
     if (!form) return;
     
-    
+    try {
+      const formData = new FormData();
+      formData.append('titulo', form.titulo);
+      formData.append('descripcion', form.descripcion);
+      formData.append('estado', form.estado);
+      formData.append('fecha_cierre', new Date(form.fecha_cierre).toISOString());
+      
+      // Si se marcó eliminar PDF
+      if (removePdf) {
+        formData.append('removePdf', 'true');
+      }
+      
+      // Si se seleccionó un nuevo PDF
+      const pdfFile = pdfInputRef.current?.files?.[0];
+      if (pdfFile) {
+        formData.append('pdf', pdfFile);
+      }
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${(import.meta as any).env?.VITE_API_URL || 'http://localhost:3000'}/api/licitaciones/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        }
+      );
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al actualizar la licitación');
+      }
+      
+      alert('Licitación actualizada correctamente');
+      nav('/');
+    } catch (error: any) {
+      console.error('Error al actualizar:', error);
+      alert(error.message || 'Error al actualizar la licitación');
+    }
   }
 
   return (
